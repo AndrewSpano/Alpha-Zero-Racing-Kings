@@ -1,5 +1,5 @@
 """
-Created on February 13
+Created on February 13 2021
 
 In order for this script to work, you have to add the the python instruction 'global gameboard' to
 line 56 of the chessboard.display.py file, so that it becomes:
@@ -13,7 +13,6 @@ You can also comment line 41:
 def terminate():
     pygame.quit()
     # sys.exit()
-
 
 if you want the terminate function to just close the display but not quit the execution.
 """

@@ -1,2 +1,3 @@
 chess~=1.4.0
 chess-board==0.2.0
+torch~=1.7.1
