@@ -33,6 +33,7 @@ class RacingKingsEnv:
         self._board = variant.RacingKingsBoard()
         self.fen_white_pieces = ['N', 'B', 'R', 'Q', 'K']
         self.fen_black_pieces = ['n', 'b', 'r', 'q', 'k']
+        self.repetitions_count = {piece_arrangement_from_fen(self._board.starting_fen): 1}
 
     @property
     def fen(self):
@@ -49,7 +50,7 @@ class RacingKingsEnv:
                     current position (state).
         :rtype:   list(str)
         """
-        return self._board.legal_moves
+        return [self._board.uci(uci) for uci in list(self._board.legal_moves)]
 
     @property
     def is_finished(self):
@@ -64,6 +65,9 @@ class RacingKingsEnv:
         """
         :return:  Returns 1 if white has won the game, -1 if black won or 0 if it was drawn.
         :rtype:   int
+
+        :raises:
+            GameIsNotOverError:  If the game has not ended, then this error is raised.
         """
         result = self._board.result()
         if result == '*':
@@ -78,6 +82,23 @@ class RacingKingsEnv:
         Resets the board to the initial position.
         """
         self._board.reset()
+        self.repetitions_count = {piece_arrangement_from_fen(self._board.starting_fen): 1}
+
+    def set_fen(self, fen):
+        """
+        :param str fen:  The FEN string that describes a Racing Kings Chess position, which should
+                            be set in the current environment.
+
+        :return:  None
+        :rtype:   None
+
+        :raises:
+            ValueError:  If the FEN provided is invalid for the Racing Kings Chess variant.
+
+        Sets the current board position (state) to the one described by the input fen.
+        """
+        self._board.set_fen(fen)
+        self.repetitions_count = {piece_arrangement_from_fen(fen): 1}
 
     def display_current_board(self, delay=3):
         """
@@ -194,32 +215,3 @@ cnn_inp = torch.ByteTensor(env.representation_of_starting_fen())
 torch.set_printoptions(threshold=10_000)
 print(cnn_inp)
 print(cnn_inp.shape)
-
-
-# board = variant.RacingKingsBoard()
-# print(board.starting_fen)
-#
-# moves = ['Kh3', 'Ka3',
-#          'Bd4', 'Ka4',
-#          'Kg4', 'Ka5',
-#          'Kh5', 'Ka6',
-#          'Rg7', 'Rb7',
-#          'Nxc2', 'Qxd4',
-#          'Rxb7', 'Rxb7',
-#          'Rg8', 'Ka7',
-#          'Ne2xd4', 'Rb8',
-#          'Kg6', 'Ba3',
-#          'Kg7', 'Rf8',
-#          'Rxf8', 'Bd6',
-#          'Kh8']
-#
-# display.start(board.fen())
-# # while not display.checkForQuit():
-# while not board.is_variant_end():
-#     if moves:
-#         board.push_san(moves.pop(0))
-#         display.update(board.fen())
-#     sleep(0.5)
-#
-# print(board.fen())
-# display.terminate()

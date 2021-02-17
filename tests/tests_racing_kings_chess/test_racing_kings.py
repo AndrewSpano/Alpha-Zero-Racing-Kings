@@ -3,18 +3,17 @@ Created on February 15 2021
 """
 
 import unittest
-import chess.variant as variant
-from src.racing_kings_chess import racing_kings_utils
+from src.utils.error_utils import GameIsNotOverError
+from src.racing_kings_chess.racing_kings import RacingKingsEnv
 
 
-class TestRacingKingsUtils(unittest.TestCase):
+class TestRacingKingsEnv(unittest.TestCase):
     """ implements tests for the utility functions of the Racing Kings Chess variant """
 
     @classmethod
     def setUpClass(cls) -> None:
         # create here once the Racing Kings board
-        cls.board = variant.RacingKingsBoard()
-        cls.starting_fen = cls.board.starting_fen
+        cls.env = RacingKingsEnv()
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -26,9 +25,55 @@ class TestRacingKingsUtils(unittest.TestCase):
     def tearDown(self) -> None:
         pass
 
-    def test_fen_to_board(self):
-        """ test the fen_to_board() function """
-        from expected_values import fen_to_target_board
-        for fen, target in fen_to_target_board.items():
-            result = racing_kings_utils.fen_to_board(fen)
-            self.assertEqual(result, target)
+    def test_starting_fen(self):
+        """ test the starting_fen() method of the Racing Kings Environment class """
+        from expected_values import starting_fen
+        self.assertEqual(RacingKingsEnv.starting_fen(), starting_fen)
+
+    def test_legal_moves(self):
+        """ test the legal_moves property of the Racing Kings Environment class """
+        from expected_values import moves_to_legal_moves
+        for moves, target_legal_moves in moves_to_legal_moves.items():
+            self.env.reset()
+            for move in moves:
+                self.env.play_move(move)
+            self.assertEqual(self.env.legal_moves, target_legal_moves)
+
+    def test_fen(self):
+        """ test the fen method of the Racing Kings Environment class """
+        from expected_values import moves_to_fen
+        for moves, target_fen in moves_to_fen.items():
+            self.env.reset()
+            for move in moves:
+                self.env.play_move(move)
+            self.assertEqual(self.env.fen, target_fen)
+
+    def test_is_finished(self):
+        """ test the is_finished property of the Racing Kings Environment class """
+        from expected_values import moves_to_is_finished
+        for moves, target_is_finished in moves_to_is_finished.items():
+            self.env.reset()
+            for move in moves:
+                self.env.play_move(move)
+            self.assertEqual(self.env.is_finished, target_is_finished)
+
+    def test_winner(self):
+        """ test the winner property of the Racing Kings Environment class """
+        from expected_values import moves_to_winner
+        for moves, target_winner in moves_to_winner.items():
+            self.env.reset()
+            for move in moves:
+                self.env.play_move(move)
+
+            try:
+                winner = self.env.winner
+                self.assertEqual(winner, target_winner)
+            except GameIsNotOverError:
+                if target_winner != '*':
+                    self.assertTrue(False)
+
+    def test_representation_of_starting_fen(self):
+        """ test the representation_of_starting_fen() method of the Racing Kings Environment
+            class """
+        from expected_values import starting_fen_input
+        self.assertEqual(self.env.representation_of_starting_fen(t_history=8), starting_fen_input)

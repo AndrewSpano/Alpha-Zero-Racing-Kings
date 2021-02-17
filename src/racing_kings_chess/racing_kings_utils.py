@@ -7,6 +7,16 @@ Utility function used for manipulation of chess boards and positions (states).
 import pprint
 
 
+def piece_arrangement_from_fen(fen):
+    """
+    :param str fen:  The FEN string describing a position (state) in a Racing Kings Chess board.
+
+    :return:  The first section of the FEN string describing the pieces arrangement on the board.
+    :rtype:   str
+    """
+    return fen.split()[0]
+
+
 def fen_to_board_pieces(fen, piece, n=8):
     """
     :param str fen:    The FEN string describing a position (state) in a Racing Kings Chess board.
