@@ -1,6 +1,8 @@
 """
 Created on February 15 2021
 
+@author: Andreas Spanopoulos
+
 Utility function used for manipulation of chess boards and positions (states).
 """
 

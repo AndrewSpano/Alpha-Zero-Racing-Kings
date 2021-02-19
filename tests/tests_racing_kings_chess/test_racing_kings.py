@@ -1,10 +1,12 @@
 """
 Created on February 15 2021
+
+@author: Andreas Spanopoulos
 """
 
 import unittest
 from src.utils.error_utils import GameIsNotOverError
-from src.racing_kings_chess.racing_kings import RacingKingsEnv
+from src.racing_kings_environment.racing_kings import RacingKingsEnv
 
 
 class TestRacingKingsEnv(unittest.TestCase):

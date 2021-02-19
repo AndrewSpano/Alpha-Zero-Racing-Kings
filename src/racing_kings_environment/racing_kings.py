@@ -1,6 +1,8 @@
 """
 Created on February 13 2021
 
+@author: Andreas Spanopoulos
+
 In order for this script to work, you have to add the the python instruction 'global gameboard' to
 line 56 of the chessboard.display.py file, so that it becomes:
 
@@ -23,7 +25,7 @@ from chessboard import display
 from time import sleep
 
 from src.utils.error_utils import GameIsNotOverError
-from src.racing_kings_chess.racing_kings_utils import *
+from src.racing_kings_environment.racing_kings_utils import *
 
 
 class RacingKingsEnv:
@@ -210,8 +212,8 @@ class RacingKingsEnv:
         return cnn_input
 
 
-env = RacingKingsEnv()
-cnn_inp = torch.ByteTensor(env.representation_of_starting_fen())
-torch.set_printoptions(threshold=10_000)
-print(cnn_inp)
-print(cnn_inp.shape)
+# env = RacingKingsEnv()
+# cnn_inp = torch.ByteTensor(env.representation_of_starting_fen())
+# torch.set_printoptions(threshold=10_000)
+# print(cnn_inp)
+# print(cnn_inp.shape)
