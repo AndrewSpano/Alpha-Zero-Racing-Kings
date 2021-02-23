@@ -106,7 +106,7 @@ class RacingKingsEnv:
         :rtype:   int
         """
         _, _, _, _, _, total_moves = self.fen.split()
-        return total_moves
+        return int(total_moves)
 
     @property
     def legal_moves(self):

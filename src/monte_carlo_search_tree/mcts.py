@@ -7,6 +7,7 @@ Implements Monte Carlo Tree Search.
 """
 
 
+import time
 import torch
 import torch.nn.functional as F
 import operator
@@ -155,6 +156,26 @@ class Node:
         # Node with highest UCB score
         return max(ucbs.items(), key=operator.itemgetter(1))[0]
 
+    def compute_optimal_policy(self, total_moves, tau):
+        """
+        :param int total_moves:  Number of total actions that can be taken from any state.
+        :param float tau:        Temperature parameter used to promote exploration early in the
+                                    game.
+
+        :return:  A Tensor describing the optimal policy found by the MCTS simulations.
+        :rtype:   torch.Tensor
+        """
+        # sum of visit counts
+        sum_n = sum([visit_count ** (1 / tau) for action, visit_count in self.N.items()
+                     if not self.children[action].is_leaf])
+
+        # initialize all action probabilities with 0, and change the value only for the legal ones
+        pi = torch.zeros(1, total_moves)
+        for action in self.actions:
+            pi[0, action] = (self.N[action] ** (1 / tau)) / sum_n
+
+        return pi
+
 
 class MCTS:
     """ class used to implement the Monte Carlo Tree Search algorithm """
@@ -260,23 +281,18 @@ class MCTS:
             # if the current Node is a terminal Node, return the result of the game
             if node.is_terminal:
                 winner = env_copy.winner
+
                 # draw
                 if winner == 0:
-                    return 0
-                elif winner == 1:
-                    # white won and white was to play in root state
-                    if self.env.side_to_move == 'w':
-                        return 1
-                    # white won and black was to play in root state
-                    else:
-                        return -1
+                    result = 0
+                elif (winner == 1 and self.env.side_to_move == 'w') or \
+                     (winner == -1 and self.env.side_to_move == 'b'):
+                    result = 1
                 else:
-                    # black won and white was to play in root state
-                    if self.env.side_to_move == 'w':
-                        return -1
-                    # black won and black was to play in root state
-                    else:
-                        return 1
+                    result = -1
+
+                print(f'Result: {result}')
+                return result
 
             # else if the Node is a leaf Node
             if node.is_leaf:
@@ -295,7 +311,7 @@ class MCTS:
                 node.expand(available_actions, action_to_prior, terminal_actions)
 
                 # backup the value to the previous edges
-                return v
+                return v.item()
 
     def simulate(self):
         """
@@ -308,8 +324,24 @@ class MCTS:
         simulations = self.hyperparameters['num_iterations']
         # simulations = 1
         for _ in range(simulations):
-            print(_)
             self.select(self.root_node, self.env.copy())
+
+    def sample_probabilities(self):
+        """
+        :return:  A Tensor containing the probability of each action from the root Node being
+                    chosen by the optimal policy.
+        :rtype:   torch.Tensor
+
+        Computes the value: pi(a|s) = N(s_root, a) ^ {1/tau} / sum_b N(s_root, b) ^ {1/tau}
+        Basically computes an estimation of the optimal policy using the visit count of every
+        action from the root Node. Actions that are illegal get a value of 0.
+        """
+        tau = self.hyperparameters['temperature_tau']
+        degrade_at_step = self.hyperparameters['degrade_at_step']
+        degraded_tau = self.hyperparameters['degraded_temperature']
+        tau = tau if self.env.moves_played < degrade_at_step else degraded_tau
+
+        return self.root_node.compute_optimal_policy(self.mvt.num_actions, tau)
 
 
 # for testing purposes
@@ -330,4 +362,12 @@ if __name__ == "__main__":
 
     mcts = MCTS(env, model, mvt, mcts_hyperparams)
 
+    start_time = time.time()
     mcts.simulate()
+    print(f'Time taken to execute the MCTS is {time.time() - start_time}')
+
+    pi_pred = mcts.sample_probabilities()
+    torch.set_printoptions(threshold=10000)
+    print(f'Optimal policy found:')
+    print(pi_pred)
+    print(torch.sum(pi_pred))
