@@ -38,9 +38,12 @@ class NeuralNetwork(nn.Module):
         self.convolutional_block = self._build_conv_block()
 
         # build tower of pre-residual blocks
-        self.preresidual_tower_block = [self._build_preresidual_block(self.conv_architecture['out_channels'])]
+        self.preresidual_tower_block = [
+            self._build_preresidual_block(self.conv_architecture['out_channels'])]
         for _ in range(self.num_residual_blocks - 1):
-            self.preresidual_tower_block.append(self._build_preresidual_block(self.res_architecture['out_channels']))
+            self.preresidual_tower_block.append(
+                self._build_preresidual_block(
+                    self.res_architecture['out_channels']))
 
         # build the policy head block
         self.policy_head_block = self._build_policy_head_block()
@@ -201,22 +204,24 @@ class NeuralNetwork(nn.Module):
         return torch.square(z - v) + F.cross_entropy(pi, p)
 
 
-env = RacingKingsEnv()
-inp = torch.FloatTensor(env.representation_of_starting_fen(t_history=8))
-# convert from (99, 8, 8) -> (1, 99, 8, 8)
-inp = inp.unsqueeze(0)
+if __name__ == "__main__":
 
-config_path = '../../configurations/neural_network_architecture.ini'
-arch = parse_config_file(config_path, _type='nn_architecture')
-arch['input_shape'] = (99, 8, 8)
-arch['num_actions'] = 8 * 8 * 64
+    env = RacingKingsEnv()
+    inp = torch.FloatTensor(env.current_state_representation)
+    # convert from (99, 8, 8) -> (1, 99, 8, 8)
+    inp = inp.unsqueeze(0)
 
-model = NeuralNetwork(arch)
+    config_path = '../../configurations/neural_network_architecture.ini'
+    arch = parse_config_file(config_path, _type='nn_architecture')
+    arch['input_shape'] = (99, 8, 8)
+    arch['num_actions'] = 8 * 8 * 64
 
-pi_pred, v_pred = model(inp)
+    model = NeuralNetwork(arch)
 
-print(pi_pred.shape)
-print(v_pred.shape)
+    pi_pred, v_pred = model(inp)
 
-torch.set_printoptions(threshold=10_000)
-print(torch.sum(pi_pred))
+    print(pi_pred.shape)
+    print(v_pred.shape)
+
+    torch.set_printoptions(threshold=10_000)
+    print(torch.sum(pi_pred))

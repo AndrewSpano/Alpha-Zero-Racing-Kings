@@ -29,7 +29,7 @@ def str_to_bool(s):
         return False
     else:
         raise InvalidConfigurationError(
-            msg=f"Unrecognizable scalar patten '{s}'. The field same should be either true, True,"
+            msg=f"Unrecognizable boolean patten '{s}'. The field should be either true, True,"
                 f"TRUE, false, False or FALSE. ")
 
 
@@ -44,17 +44,39 @@ def str_to_int(s):
         InvalidConfigurationError:  Error raised if a field of the configuration file is invalid.
     """
     if len(re.findall(r'\D', re.sub(r'\s+', '', s))) > 0:
-        raise InvalidConfigurationError(
-            msg=f"Unrecognizable scalar patten '{s}'. The fields out_channels and fc_output_dim "
-                f"should be positive integers.")
+        raise InvalidConfigurationError(msg=f"Unrecognizable scalar patten '{s}'. The fields "
+                                            f"should be a positive integer.")
 
     numbers = re.findall(r'\d+', s)
     if len(numbers) != 1:
         raise InvalidConfigurationError(
-            msg=f"Unrecognizable scalar patten '{s}'. The fields out_channels and fc_output_dim "
-                f"should contain exactly one positive integer value.")
+            msg=f"Unrecognizable scalar patten '{s}'. The fields should contain exactly one "
+                f"positive integer value.")
 
     return int(numbers[0])
+
+
+def str_to_float(s):
+    """
+    :param str s:  String to be parsed and converted to a floating point number.
+
+    :return:  The float value that the input string represents.
+    :rtype:   float
+
+    :raises:
+        InvalidConfigurationError:  Error raised if a field of the configuration file is invalid.
+    """
+    if len(re.findall(r'[^\d.e-]', re.sub(r'\s+', '', s))) > 0:
+        raise InvalidConfigurationError(msg=f"Unrecognizable scalar patten '{s}'. The field should "
+                                            f"be a float value, e.g.: 1.0")
+
+    numbers = re.findall(r'(\d+e-\d+|\d+\.\d+|\d+)', s)
+    if len(numbers) != 1:
+        print(numbers)
+        raise InvalidConfigurationError(msg=f"Unrecognizable scalar patten '{s}'. The fields "
+                                            f"should contain exactly one floating point value.")
+
+    return float(numbers[0])
 
 
 def str_to_int_or_tuple(s):
@@ -62,33 +84,58 @@ def str_to_int_or_tuple(s):
     :param str s:  String to be parsed and converted to an integer or tuple of integers.
 
     :return:  The corresponding value (integer of tuple of integers) of the input string.
-    :rtype:   Union[int, Tuple(int)]
+    :rtype:   Union[int, Tuple[int]]
 
     :raises:
         InvalidConfigurationError:  Error raised if a field of the configuration file is invalid.
     """
-    if len(re.findall(r'[^\d(),\s]', s)) > 0:
+    if len(re.findall(r'[^\d(),]', re.sub(r'\s+', '', s))) > 0:
         raise InvalidConfigurationError(
-            msg=f"Unrecognizable patten '{s}'. The fields kernel_size and stride should either be "
-                f"positive integers or tuples of positive integers.")
+            msg=f"Unrecognizable patten '{s}'. The field should either be a positive integer or a "
+                f"tuple of positive integers.")
 
-    target_string = re.findall(r'([\d]+|\(\s*[\d]+,\s*[\d]+\s*\))', s)
+    target_string = re.findall(r'([\d]+|\([\d]+,[\d]+\))', re.sub(r'\s+', '', s))
     if len(target_string) != 1:
         raise InvalidConfigurationError(
-            msg=f"Unrecognizable patten '{s}'. The fields kernel_size and stride should contain "
-                f"exactly one value: Union[positive int, Tuple(positive ints)]")
+            msg=f"Unrecognizable patten '{s}'. The field should contain exactly one value: "
+                f"Union[positive int, Tuple(positive ints)]")
 
     matches = re.findall(r'[\d]+', target_string[0])
     if len(matches) == 1:
         # input was a scalar
         if len(re.findall(r'[(),]', s)) > 0:
             raise InvalidConfigurationError(
-                msg=f"Unrecognizable scalar patten '{s}'. The fields kernel_size and stride should "
-                    f"either be positive integers or tuples of positive integers.")
+                msg=f"Unrecognizable scalar patten '{s}'. The field should either be a positive "
+                    f"integer or a tuple of positive integers.")
         return int(matches[0])
     else:
         # input was a tuple
         return tuple(int(match) for match in matches)
+
+
+def str_to_float_list(s):
+    """
+    :param str s:  String to be parsed and converted to list of floating point numbers.
+
+    :return:  The corresponding value (list of 3 floats) of the input string.
+    :rtype:   List[float]
+
+    :raises:
+        InvalidConfigurationError:  Error raised if a field of the configuration file is invalid.
+    """
+    if len(re.findall(r'[^\d\[\],.]', re.sub(r'\s+', '', s))) > 0:
+        raise InvalidConfigurationError(
+            msg=f"Unrecognizable patten '{s}'. The field should either be a positive float or a "
+                f"list of positive floats.")
+
+    target_string = re.findall(r'\[\d+\.\d+,\d+\.\d+,\d+\.\d+]', re.sub(r'\s+', '', s))
+    if len(target_string) != 1:
+        raise InvalidConfigurationError(
+            msg=f"Unrecognizable patten '{s}'. The field should contain exactly one value: "
+                f"List[float]")
+
+    matches = re.findall(r'\d+\.\d+', target_string[0])
+    return [float(match) for match in matches]
 
 
 def configuration_to_architecture_dict(conf):
@@ -174,11 +221,28 @@ def configuration_to_generic_architecture_dict(conf):
     return params
 
 
+def configuration_to_mcts_hyperparameters(conf):
+    """
+    :param ConfigParser conf:  The Configuration Parser that has parsed an configuration file
+                                containing information about the hyperparameters of MCTS.
+
+    :return:  A dictionary that has parsed the MCTS hyperparameters information from the
+                ConfigParser.
+    :rtype:   dict
+    """
+    return {'num_iterations': str_to_int(conf['hyperparameters']['num_iterations']),
+            'c_puct': str_to_float(conf['hyperparameters']['c_puct']),
+            'dirichlet_alpha': str_to_float_list(conf['hyperparameters']['dirichlet_alpha']),
+            'dirichlet_epsilon': str_to_float(conf['hyperparameters']['dirichlet_epsilon']),
+            'temperature_tau': str_to_float(conf['hyperparameters']['temperature_tau']),
+            'degrade_at_step': str_to_int(conf['hyperparameters']['degrade_at_step']),
+            'degraded_temperature': str_to_float(conf['hyperparameters']['degraded_temperature'])}
+
+
 def parse_config_file(filepath, _type='nn_architecture'):
     """
     :param str filepath:  The (absolute/relative) path to the configuration file.
-    ToDo: add more types when needed
-    :param str _type:     One of 'nn_architecture', 'generic_nn_architecture'
+    :param str _type:     One of 'nn_architecture', 'generic_nn_architecture', 'mcts_hyperparams'
 
     :return:  The dictionary describing the configuration file.
     :rtype:   dict
@@ -193,15 +257,15 @@ def parse_config_file(filepath, _type='nn_architecture'):
         return configuration_to_architecture_dict(config_parser)
     elif _type == 'generic_nn_architecture':
         return configuration_to_generic_architecture_dict(config_parser)
+    elif _type == 'mcts_hyperparams':
+        return configuration_to_mcts_hyperparameters(config_parser)
     else:
         raise ValueError('Unknown configuration file type.')
 
 
-# w = str_to_int('256')
-# print(w)
+if __name__ == "__main__":
 
-
-# import pprint
-# pp = pprint.PrettyPrinter()
-# file = '../../configurations/generic_neural_network_architecture.ini'
-# pp.pprint(parse_config_file(file))
+    import pprint
+    pp = pprint.PrettyPrinter()
+    file = '../../configurations/mcts_hyperparams.ini'
+    pp.pprint(parse_config_file(file, _type='mcts_hyperparams'))

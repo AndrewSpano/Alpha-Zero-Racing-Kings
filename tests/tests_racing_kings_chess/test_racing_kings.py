@@ -22,7 +22,7 @@ class TestRacingKingsEnv(unittest.TestCase):
         pass
 
     def setUp(self) -> None:
-        pass
+        self.env.reset()
 
     def tearDown(self) -> None:
         pass
@@ -30,7 +30,7 @@ class TestRacingKingsEnv(unittest.TestCase):
     def test_starting_fen(self):
         """ test the starting_fen() method of the Racing Kings Environment class """
         from expected_values import starting_fen
-        self.assertEqual(RacingKingsEnv.starting_fen(), starting_fen)
+        self.assertEqual(self.env.starting_fen, starting_fen)
 
     def test_legal_moves(self):
         """ test the legal_moves property of the Racing Kings Environment class """
@@ -78,4 +78,4 @@ class TestRacingKingsEnv(unittest.TestCase):
         """ test the representation_of_starting_fen() method of the Racing Kings Environment
             class """
         from expected_values import starting_fen_input
-        self.assertEqual(self.env.representation_of_starting_fen(t_history=8), starting_fen_input)
+        self.assertEqual(self.env.current_state_representation, starting_fen_input)
