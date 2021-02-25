@@ -16,12 +16,12 @@ class MoveTranslator:
     def __init__(self):
         """ constructor """
 
-        self.files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
-        self.ranks = ['1', '2', '3', '4', '5', '6', '7', '8']
-        self.size = (8, 8)
+        self._files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+        self._ranks = ['1', '2', '3', '4', '5', '6', '7', '8']
+        self._size = (8, 8)
         lookups = self._build_square_coordinate_lookups()
-        self.square_to_coordinate, self.coordinate_to_square = lookups
-        self.move_to_id, self.id_to_move = self._build_id_and_move_lookups()
+        self._square_to_coordinate, self._coordinate_to_square = lookups
+        self._move_to_id, self._id_to_move = self._build_id_and_move_lookups()
 
     def _build_square_coordinate_lookups(self):
         """
@@ -34,8 +34,8 @@ class MoveTranslator:
         """
         square_to_coordinate = {}
         coordinate_to_square = {}
-        for file_index, file in enumerate(self.files):
-            for rank_index, rank in enumerate(self.ranks):
+        for file_index, file in enumerate(self._files):
+            for rank_index, rank in enumerate(self._ranks):
                 square_id, square = (file_index, rank_index), file + rank
                 square_to_coordinate[square] = square_id
                 coordinate_to_square[square_id] = square
@@ -49,7 +49,7 @@ class MoveTranslator:
         :return:  True if the square if legal (within boundaries); Else False
         :rtype:   bool
         """
-        return 0 <= coordinate[0] < self.size[0] and 0 <= coordinate[1] < self.size[1]
+        return 0 <= coordinate[0] < self._size[0] and 0 <= coordinate[1] < self._size[1]
 
     def _squares_queens_move_away(self, coordinate):
         """
@@ -63,7 +63,7 @@ class MoveTranslator:
         for offset in offsets:
             target = (coordinate[0] + offset[0], coordinate[1] + offset[1])
             while self._is_within_board(target):
-                queen_moves.append(self.coordinate_to_square[target])
+                queen_moves.append(self._coordinate_to_square[target])
                 target = (target[0] + offset[0], target[1] + offset[1])
 
         return queen_moves
@@ -77,7 +77,7 @@ class MoveTranslator:
         """
         offsets = [(-2, 1), (-1, 2), (1, 2), (2, 1), (2, -1), (1, -2), (-1, -2), (-2, -1)]
         knight_jumps = map(lambda off: (coordinate[0] + off[0], coordinate[1] + off[1]), offsets)
-        return [self.coordinate_to_square[knight_jump] for knight_jump in knight_jumps
+        return [self._coordinate_to_square[knight_jump] for knight_jump in knight_jumps
                 if self._is_within_board(knight_jump)]
 
     def _build_id_and_move_lookups(self):
@@ -92,7 +92,7 @@ class MoveTranslator:
         move_to_id = {}
         id_to_move = {}
 
-        for coordinate, square in self.coordinate_to_square.items():
+        for coordinate, square in self._coordinate_to_square.items():
 
             squares_reachable_by_queen_move = self._squares_queens_move_away(coordinate)
             squares_reachable_by_knight_move = self._squares_knights_move_away(coordinate)
@@ -114,7 +114,7 @@ class MoveTranslator:
         :return:  The number of different actions that exist.
         :rtype:   int
         """
-        return len(self.move_to_id)
+        return len(self._move_to_id)
 
     def get_move_id(self, move):
         """
@@ -124,7 +124,7 @@ class MoveTranslator:
                     _build_id_and_move_lookups()
         :rtype:   int
         """
-        return self.move_to_id[move]
+        return self._move_to_id[move]
 
     def get_move(self, _id):
         """
@@ -133,7 +133,7 @@ class MoveTranslator:
         :return:  The corresponding move as computed by the method _build_id_and_move_lookups()
         :rtype:   str
         """
-        return self.id_to_move[_id]
+        return self._id_to_move[_id]
 
     def get_move_ids_from_uci(self, uci_moves):
         """
@@ -142,7 +142,7 @@ class MoveTranslator:
         :return:  A list containing the IDs of each move respectively.
         :rtype:   list[int]
         """
-        return [self.move_to_id[move] for move in uci_moves]
+        return [self._move_to_id[move] for move in uci_moves]
 
 
 if __name__ == "__main__":

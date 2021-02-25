@@ -113,9 +113,10 @@ def str_to_int_or_tuple(s):
         return tuple(int(match) for match in matches)
 
 
-def str_to_float_list(s):
+def str_to_float_list(s, num):
     """
-    :param str s:  String to be parsed and converted to list of floating point numbers.
+    :param str s:    String to be parsed and converted to list of floating point numbers.
+    :param int num:  Number of floats to parse.
 
     :return:  The corresponding value (list of 3 floats) of the input string.
     :rtype:   List[float]
@@ -123,19 +124,24 @@ def str_to_float_list(s):
     :raises:
         InvalidConfigurationError:  Error raised if a field of the configuration file is invalid.
     """
-    if len(re.findall(r'[^\d\[\],.]', re.sub(r'\s+', '', s))) > 0:
+    s = re.sub(r'\s+', '', s)
+    if len(re.findall(r'[^\d\[\],.e-]', s)) > 0:
         raise InvalidConfigurationError(
             msg=f"Unrecognizable patten '{s}'. The field should either be a positive float or a "
                 f"list of positive floats.")
 
-    target_string = re.findall(r'\[\d+\.\d+,\d+\.\d+,\d+\.\d+]', re.sub(r'\s+', '', s))
+    float_regex = r'(\d+e-\d+|\d+\.\d+|\d+)'
+    list_regex = r'\[' + float_regex
+    for _ in range(num - 1):
+        list_regex += r',' + float_regex
+    list_regex += r']'
+    target_string = re.findall(list_regex, s)
     if len(target_string) != 1:
         raise InvalidConfigurationError(
             msg=f"Unrecognizable patten '{s}'. The field should contain exactly one value: "
                 f"List[float]")
 
-    matches = re.findall(r'\d+\.\d+', target_string[0])
-    return [float(match) for match in matches]
+    return [float(match) for match in target_string[0]]
 
 
 def configuration_to_architecture_dict(conf):
@@ -232,17 +238,41 @@ def configuration_to_mcts_hyperparameters(conf):
     """
     return {'num_iterations': str_to_int(conf['hyperparameters']['num_iterations']),
             'c_puct': str_to_float(conf['hyperparameters']['c_puct']),
-            'dirichlet_alpha': str_to_float_list(conf['hyperparameters']['dirichlet_alpha']),
+            'dirichlet_alpha': str_to_float_list(conf['hyperparameters']['dirichlet_alpha'], 3),
             'dirichlet_epsilon': str_to_float(conf['hyperparameters']['dirichlet_epsilon']),
             'temperature_tau': str_to_float(conf['hyperparameters']['temperature_tau']),
             'degrade_at_step': str_to_int(conf['hyperparameters']['degrade_at_step']),
             'degraded_temperature': str_to_float(conf['hyperparameters']['degraded_temperature'])}
 
 
+def configuration_to_training_parameters(conf):
+    """
+    :param ConfigParser conf:  The Configuration Parser that has parsed an configuration file
+                                containing information about the training procedure.
+
+    :return:  A dictionary that has parsed the training hyperparameters information from the
+                ConfigParser.
+    :rtype:   dict
+    """
+    return {'learning_rate': str_to_float(conf['hyperparameters']['learning_rate']),
+            'milestones': str_to_float_list(conf['hyperparameters']['milestones'], 3),
+            'gamma': str_to_float(conf['hyperparameters']['gamma']),
+            'momentum;': str_to_float(conf['hyperparameters']['momentum']),
+            'c': str_to_float(conf['hyperparameters']['c']),
+            'batch_size': str_to_int(conf['hyperparameters']['batch_size']),
+            'iterations': str_to_int(conf['self_play']['iterations']),
+            'self_play_episodes': str_to_int(conf['self_play']['self_play_episodes']),
+            'epochs': str_to_int(conf['self_play']['epochs']),
+            'max_deque_len': str_to_int(conf['self_play']['max_deque_len']),
+            'max_game_len': str_to_int(conf['self_play']['max_game_len']),
+            'checkpoint_every': str_to_int(conf['self_play']['checkpoint_every'])}
+
+
 def parse_config_file(filepath, _type='nn_architecture'):
     """
     :param str filepath:  The (absolute/relative) path to the configuration file.
-    :param str _type:     One of 'nn_architecture', 'generic_nn_architecture', 'mcts_hyperparams'
+    :param str _type:     One of 'nn_architecture', 'generic_nn_architecture',
+                                 'mcts_hyperparams', 'training'
 
     :return:  The dictionary describing the configuration file.
     :rtype:   dict
@@ -259,6 +289,8 @@ def parse_config_file(filepath, _type='nn_architecture'):
         return configuration_to_generic_architecture_dict(config_parser)
     elif _type == 'mcts_hyperparams':
         return configuration_to_mcts_hyperparameters(config_parser)
+    elif _type == 'training':
+        return configuration_to_training_parameters(config_parser)
     else:
         raise ValueError('Unknown configuration file type.')
 

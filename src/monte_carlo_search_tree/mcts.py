@@ -13,10 +13,10 @@ import torch.nn.functional as F
 import operator
 import numpy as np
 
-from src.racing_kings_environment.racing_kings import RacingKingsEnv
-from src.racing_kings_environment.action_representations import MoveTranslator
+from src.environment.racing_kings import RacingKingsEnv
+from src.environment.action_representations import MoveTranslator
 from src.neural_network.network import NeuralNetwork
-from src.utils.parsing_utils import parse_config_file
+from src.utils.config_parsing_utils import parse_config_file
 
 
 class Node:
@@ -147,8 +147,7 @@ class Node:
         and returns the action a with the highest UCB(a) value.
         """
         # sum of visit counts
-        sum_n = sum([visit_count for action, visit_count in self.N.items()
-                     if not self.children[action].is_leaf])
+        sum_n = sum([visit_count for action, visit_count in self.N.items()])
 
         # UCB score for every action
         ucbs = {action: self._ucb_score(action, c_puct, sum_n) for action in self.actions}
@@ -162,17 +161,16 @@ class Node:
         :param float tau:        Temperature parameter used to promote exploration early in the
                                     game.
 
-        :return:  A Tensor describing the optimal policy found by the MCTS simulations.
-        :rtype:   torch.Tensor
+        :return:  A list describing the optimal policy found by the MCTS simulations.
+        :rtype:   list[int]
         """
         # sum of visit counts
-        sum_n = sum([visit_count ** (1 / tau) for action, visit_count in self.N.items()
-                     if not self.children[action].is_leaf])
+        sum_n = sum([visit_count ** (1 / tau) for action, visit_count in self.N.items()])
 
         # initialize all action probabilities with 0, and change the value only for the legal ones
-        pi = torch.zeros(1, total_moves)
+        pi = [0] * total_moves
         for action in self.actions:
-            pi[0, action] = (self.N[action] ** (1 / tau)) / sum_n
+            pi[action] = (self.N[action] ** (1 / tau)) / sum_n
 
         return pi
 
@@ -180,23 +178,23 @@ class Node:
 class MCTS:
     """ class used to implement the Monte Carlo Tree Search algorithm """
 
-    def __init__(self, _env, _nn, _mvt, _hyperparams):
+    def __init__(self, env, nn, mvt, hyperparams):
         """
-        :param RacingKingsEnv _env:  Current Environment.
-        :param NeuralNetwork _nn:    Neural Network used for prior probability prediction.
-        :param MoveTranslator _mvt:  Move Translator object used to convert move to their IDs.
-        :param dict _hyperparams:    Dictionary containing hyperparameters for the model.
+        :param RacingKingsEnv env:   Current Environment.
+        :param torch.nn.Module. nn:  Neural Network used for prior probability prediction.
+        :param MoveTranslator mvt:   Move Translator object used to convert move to their IDs.
+        :param dict hyperparams:     Dictionary containing hyperparameters for the model.
         """
         # basic variables of the class
-        self.env = _env
-        self.nn = _nn
-        self.mvt = _mvt
-        self.hyperparameters = _hyperparams
+        self.env = env
+        self.nn = nn
+        self.mvt = mvt
+        self.hyperparameters = hyperparams
         self.root_node = Node()
 
         # compute the available action from the root node
         available_actions_from_root = self.mvt.get_move_ids_from_uci(self.env.legal_moves)
-        terminal_actions = self._actions_that_lead_to_terminal_state(_env,
+        terminal_actions = self._actions_that_lead_to_terminal_state(env,
                                                                      available_actions_from_root)
 
         # compute prior probabilities for each available action using the NN
@@ -206,8 +204,8 @@ class MCTS:
 
         # initialize Search Tree: expand the root Node
         self.root_node.expand(available_actions_from_root, action_to_prior, terminal_actions)
-        self.root_node.add_dirichlet_noise_to_prior_probabilities(_hyperparams['dirichlet_alpha'],
-                                                                  _hyperparams['dirichlet_epsilon'])
+        self.root_node.add_dirichlet_noise_to_prior_probabilities(hyperparams['dirichlet_alpha'],
+                                                                  hyperparams['dirichlet_epsilon'])
 
     def _actions_that_lead_to_terminal_state(self, _env, available_actions):
         """
@@ -239,15 +237,14 @@ class MCTS:
 
         # initialize a mask tensor with -infinite values where the actions are illegal
         mask = torch.Tensor([float('-inf')] * self.mvt.num_actions)
-        for action in actions:
-            mask[action] = 0
+        mask[actions] = 0
 
         # run the masked output through Softmax to get the prior probabilities of legal actions
         prior_probabilities = F.softmax(p + mask, dim=0)
 
         return {action: prior_probabilities[action] for action in actions}
 
-    def select(self, node, env_copy):
+    def _select_expand_backup(self, node, env_copy):
         """
         :param Node node:                The current Node we are in the Search Tree.
         :param RacingKingsEnv env_copy:  A copy of the original environment used for MCTS.
@@ -256,7 +253,8 @@ class MCTS:
         :rtype:    float
 
         Selects iteratively the Node with the highest UCB score in each level of the Search Tree,
-        until it finds a leaf Node.
+        until it finds a leaf Node. If it is not terminal, it expands it, and then backups its
+        action value to the higher Nodes of the search tree.
         """
         # if current Node is not a leaf or terminal Node, proceed to the next Node
         if not (node.is_leaf or node.is_terminal):
@@ -267,7 +265,7 @@ class MCTS:
             next_node = node.get_child_node_from_action(best_action)
 
             # get the backed up value from the child Node
-            value = self.select(next_node, env_copy)
+            value = self._select_expand_backup(next_node, env_copy)
 
             # backup the value for the current Node also
             node.backup(best_action, value)
@@ -322,9 +320,8 @@ class MCTS:
         along the way.
         """
         simulations = self.hyperparameters['num_iterations']
-        # simulations = 1
         for _ in range(simulations):
-            self.select(self.root_node, self.env.copy())
+            self._select_expand_backup(self.root_node, self.env.copy())
 
     def sample_probabilities(self):
         """
@@ -339,7 +336,7 @@ class MCTS:
         tau = self.hyperparameters['temperature_tau']
         degrade_at_step = self.hyperparameters['degrade_at_step']
         degraded_tau = self.hyperparameters['degraded_temperature']
-        tau = tau if self.env.moves_played < degrade_at_step else degraded_tau
+        tau = tau if self.env.moves < degrade_at_step else degraded_tau
 
         return self.root_node.compute_optimal_policy(self.mvt.num_actions, tau)
 
@@ -347,27 +344,26 @@ class MCTS:
 # for testing purposes
 if __name__ == "__main__":
 
-    env = RacingKingsEnv()
-    mvt = MoveTranslator()
+    environment = RacingKingsEnv()
+    move_translator = MoveTranslator()
 
     nn_config_path = '../../configurations/neural_network_architecture.ini'
     arch = parse_config_file(nn_config_path, _type='nn_architecture')
-    arch['input_shape'] = torch.Tensor(env.current_state_representation).shape
-    arch['num_actions'] = mvt.num_actions
-    model = NeuralNetwork(arch)
+    arch['input_shape'] = torch.Tensor(environment.current_state_representation).shape
+    arch['num_actions'] = move_translator.num_actions
+    model = NeuralNetwork(arch, torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
     model.eval()
 
     mcts_config_path = '../../configurations/mcts_hyperparams.ini'
     mcts_hyperparams = parse_config_file(mcts_config_path, _type='mcts_hyperparams')
 
-    mcts = MCTS(env, model, mvt, mcts_hyperparams)
+    mcts = MCTS(environment, model, move_translator, mcts_hyperparams)
 
     start_time = time.time()
     mcts.simulate()
     print(f'Time taken to execute the MCTS is {time.time() - start_time}')
 
     pi_pred = mcts.sample_probabilities()
-    torch.set_printoptions(threshold=10000)
     print(f'Optimal policy found:')
     print(pi_pred)
-    print(torch.sum(pi_pred))
+    print(sum(pi_pred))

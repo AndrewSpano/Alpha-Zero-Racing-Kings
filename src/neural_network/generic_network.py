@@ -17,18 +17,21 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from src.neural_network.network_utils import compute_output_shape, same_padding
-from src.utils.parsing_utils import parse_config_file
-from src.racing_kings_environment.racing_kings import RacingKingsEnv
+from src.utils.config_parsing_utils import parse_config_file
+from src.environment.racing_kings import RacingKingsEnv
+from src.environment.action_representations import MoveTranslator
 
 
 class GenericNeuralNetwork(nn.Module):
     """ Neural Network class used during Training of the Alpha Zero algorithm """
 
-    def __init__(self, architecture):
+    def __init__(self, architecture, device):
         """
-        :param dict architecture:  Dictionary describing the architecture of the model.
+        :param dict architecture:    Dictionary describing the architecture of the model.
+        :param torch.device device:  The device in which the model currently operates.
         """
         super(GenericNeuralNetwork, self).__init__()
+        self.device = device
 
         # define the architecture specifics
         self.conv_architecture = architecture['conv']
@@ -270,22 +273,26 @@ class GenericNeuralNetwork(nn.Module):
         return torch.square(z - v) + F.cross_entropy(pi, p)
 
 
-env = RacingKingsEnv()
-inp = torch.FloatTensor(env.representation_of_starting_fen(t_history=8))
-# convert from (99, 8, 8) -> (1, 99, 8, 8)
-inp = inp.unsqueeze(0)
+# for testing purposes
+if __name__ == "__main__":
 
-config_path = '../../configurations/generic_neural_network_architecture.ini'
-arch = parse_config_file(config_path, _type='generic_nn_architecture')
-arch['input_shape'] = (99, 8, 8)
-arch['num_actions'] = 8 * 8 * 64
+    env = RacingKingsEnv()
+    mvt = MoveTranslator()
 
-model = GenericNeuralNetwork(arch)
+    config_path = '../../configurations/generic_neural_network_architecture.ini'
+    arch = parse_config_file(config_path, _type='generic_nn_architecture')
+    arch['input_shape'] = torch.Tensor(env.current_state_representation).shape
+    arch['num_actions'] = mvt.num_actions
 
-pi_pred, v_pred = model(inp)
+    model = GenericNeuralNetwork(arch, torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
 
-print(pi_pred.shape)
-print(v_pred.shape)
+    inp = torch.FloatTensor(env.current_state_representation)
+    # convert from (99, 8, 8) -> (1, 99, 8, 8)
+    inp = inp.unsqueeze(0)
+    pi_pred, v_pred = model(inp)
 
-torch.set_printoptions(threshold=10_000)
-print(torch.sum(pi_pred))
+    print(pi_pred.shape)
+    print(v_pred.shape)
+
+    torch.set_printoptions(threshold=10_000)
+    print(torch.sum(pi_pred))

@@ -25,7 +25,7 @@ from chessboard import display
 from time import sleep
 
 from src.utils.error_utils import GameIsNotOverError
-from src.racing_kings_environment.racing_kings_utils import *
+from src.environment.racing_kings_utils import *
 
 
 fen_white_pieces = ['N', 'B', 'R', 'Q', 'K']
@@ -100,7 +100,7 @@ class RacingKingsEnv:
         return side
 
     @property
-    def moves_played(self):
+    def moves(self):
         """
         :return:  The number of moves played in the game thus far.
         :rtype:   int
@@ -314,7 +314,7 @@ if __name__ == "__main__":
 
     # pp.pprint(env.legal_moves)
     #
-    # from src.racing_kings_environment.action_representations import MoveTranslator
+    # from src.environment.action_representations import MoveTranslator
     #
     # mvt = MoveTranslator()
     #

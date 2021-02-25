@@ -12,18 +12,20 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from src.neural_network.network_utils import same_padding
-from src.utils.parsing_utils import parse_config_file
-from src.racing_kings_environment.racing_kings import RacingKingsEnv
+from src.utils.config_parsing_utils import parse_config_file
+from src.environment.racing_kings import RacingKingsEnv
 
 
 class NeuralNetwork(nn.Module):
     """ Neural Network class used during Training of the Alpha Zero algorithm """
 
-    def __init__(self, architecture):
+    def __init__(self, architecture, device):
         """
-        :param dict architecture:  Dictionary describing the architecture of the model.
+        :param dict architecture:    Dictionary describing the architecture of the model.
+        :param torch.device device:  The device in which the model currently operates.
         """
         super(NeuralNetwork, self).__init__()
+        self.device = device
 
         # define the architecture specifics
         self.input_shape = architecture['input_shape']
@@ -216,7 +218,7 @@ if __name__ == "__main__":
     arch['input_shape'] = (99, 8, 8)
     arch['num_actions'] = 8 * 8 * 64
 
-    model = NeuralNetwork(arch)
+    model = NeuralNetwork(arch, torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
 
     pi_pred, v_pred = model(inp)
 
