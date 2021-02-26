@@ -15,7 +15,7 @@ import numpy as np
 
 from src.utils.config_parsing_utils import parse_config_file
 from src.environment.variants.base_chess_env import ChessEnv
-from src.environment.variants.actions.action_representations import MoveTranslator
+from src.environment.actions.action_representations import MoveTranslator
 
 
 class Node:
@@ -345,7 +345,7 @@ if __name__ == "__main__":
 
     from src.environment.variants.racing_kings import RacingKingsEnv
     environment = RacingKingsEnv()
-    from src.environment.variants.actions.racing_kings_actions import RacingKingsActions
+    from src.environment.actions.racing_kings_actions import RacingKingsActions
     move_translator = RacingKingsActions()
 
     nn_config_path = '../../configurations/neural_network_architecture.ini'

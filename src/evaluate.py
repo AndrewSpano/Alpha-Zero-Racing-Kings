@@ -14,7 +14,7 @@ from src.utils.main_utils import parse_evaluate_input
 from src.utils.config_parsing_utils import parse_config_file
 
 from src.environment.variants.racing_kings import RacingKingsEnv
-from src.environment.variants.actions.racing_kings_actions import RacingKingsActions
+from src.environment.actions.racing_kings_actions import RacingKingsActions
 from src.neural_network.network import NeuralNetwork
 from src.neural_network.generic_network import GenericNeuralNetwork
 from src.agent.chess_agent import RacingKingsChessAgent

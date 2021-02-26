@@ -8,7 +8,7 @@ how they are perceived as actions by a chess agent. It inherits the MoveTranslat
 """
 
 
-from src.environment.variants.actions.action_representations import MoveTranslator
+from src.environment.actions.action_representations import MoveTranslator
 
 
 class RacingKingsActions(MoveTranslator):

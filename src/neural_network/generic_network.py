@@ -275,7 +275,7 @@ class GenericNeuralNetwork(nn.Module):
 if __name__ == "__main__":
     from src.environment.variants.racing_kings import RacingKingsEnv
     env = RacingKingsEnv()
-    from src.environment.variants.actions.racing_kings_actions import RacingKingsActions
+    from src.environment.actions.racing_kings_actions import RacingKingsActions
     mvt = RacingKingsActions()
 
     config_path = '../../configurations/generic_neural_network_architecture.ini'

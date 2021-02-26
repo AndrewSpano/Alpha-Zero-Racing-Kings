@@ -14,7 +14,7 @@ from tqdm import tqdm
 from collections import deque
 from src.utils.main_utils import load_pytorch_model
 from src.environment.variants.base_chess_env import ChessEnv
-from src.environment.variants.actions.action_representations import MoveTranslator
+from src.environment.actions.action_representations import MoveTranslator
 from src.monte_carlo_search_tree.mcts import MCTS
 from src.datasets.dataset import SelfPlayDataset
 
