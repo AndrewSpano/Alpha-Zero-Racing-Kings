@@ -6,7 +6,7 @@ Created on February 15 2021
 
 import unittest
 from src.utils.error_utils import GameIsNotOverError
-from src.environment.racing_kings import RacingKingsEnv
+from src.environment.variants.racing_kings import RacingKingsEnv
 
 
 class TestRacingKingsEnv(unittest.TestCase):

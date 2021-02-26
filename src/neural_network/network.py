@@ -13,7 +13,6 @@ import torch.nn.functional as F
 
 from src.neural_network.network_utils import same_padding
 from src.utils.config_parsing_utils import parse_config_file
-from src.environment.racing_kings import RacingKingsEnv
 
 
 class NeuralNetwork(nn.Module):
@@ -206,20 +205,24 @@ class NeuralNetwork(nn.Module):
         return torch.square(z - v) + F.cross_entropy(pi, p)
 
 
+# for testing purposes
 if __name__ == "__main__":
-
+    from src.environment.variants.racing_kings import RacingKingsEnv
     env = RacingKingsEnv()
+    from src.environment.variants.actions.racing_kings_actions import RacingKingsActions
+    mvt = RacingKingsActions()
+
+    config_path = '../../configurations/generic_neural_network_architecture.ini'
+    arch = parse_config_file(config_path, _type='generic_nn_architecture')
+    arch['input_shape'] = torch.Tensor(env.current_state_representation).shape
+    arch['num_actions'] = mvt.num_actions
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = NeuralNetwork(arch, device).to(device)
+
     inp = torch.FloatTensor(env.current_state_representation)
     # convert from (99, 8, 8) -> (1, 99, 8, 8)
     inp = inp.unsqueeze(0)
-
-    config_path = '../../configurations/neural_network_architecture.ini'
-    arch = parse_config_file(config_path, _type='nn_architecture')
-    arch['input_shape'] = (99, 8, 8)
-    arch['num_actions'] = 8 * 8 * 64
-
-    model = NeuralNetwork(arch, torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
-
     pi_pred, v_pred = model(inp)
 
     print(pi_pred.shape)

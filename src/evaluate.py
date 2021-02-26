@@ -12,8 +12,9 @@ import logging
 
 from src.utils.main_utils import parse_evaluate_input
 from src.utils.config_parsing_utils import parse_config_file
-from src.environment.racing_kings import RacingKingsEnv
-from src.environment.action_representations import MoveTranslator
+
+from src.environment.variants.racing_kings import RacingKingsEnv
+from src.environment.variants.actions.racing_kings_actions import RacingKingsActions
 from src.neural_network.network import NeuralNetwork
 from src.neural_network.generic_network import GenericNeuralNetwork
 from src.agent.chess_agent import RacingKingsChessAgent
@@ -24,7 +25,7 @@ def main(args):
 
     # create the environment and an API used to translate actions into their corresponding IDs
     env = RacingKingsEnv()
-    mvt = MoveTranslator()
+    mvt = RacingKingsActions()
 
     # parse the specific configuration files in order to start building the class objects
     model_configuration = parse_config_file(args.nn_config, _type='nn_architecture')
@@ -37,9 +38,9 @@ def main(args):
     model_configuration['input_shape'] = torch.Tensor(env.current_state_representation).shape
     model_configuration['num_actions'] = mvt.num_actions
     if args.generic:
-        model = GenericNeuralNetwork(model_configuration).to(device)
+        model = GenericNeuralNetwork(model_configuration, device).to(device)
     else:
-        model = NeuralNetwork(model_configuration).to(device)
+        model = NeuralNetwork(model_configuration, device).to(device)
 
     # create the Chess agent
     chess_agent = RacingKingsChessAgent(env=env,

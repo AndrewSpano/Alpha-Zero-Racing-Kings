@@ -12,11 +12,9 @@ import numpy as np
 
 from tqdm import tqdm
 from collections import deque
-from src.utils.main_utils import save_pytorch_model, load_pytorch_model
-from src.environment.racing_kings import RacingKingsEnv
-from src.environment.action_representations import MoveTranslator
-from src.neural_network.network import NeuralNetwork
-from src.neural_network.generic_network import GenericNeuralNetwork
+from src.utils.main_utils import load_pytorch_model
+from src.environment.variants.base_chess_env import ChessEnv
+from src.environment.variants.actions.action_representations import MoveTranslator
 from src.monte_carlo_search_tree.mcts import MCTS
 from src.datasets.dataset import SelfPlayDataset
 
@@ -26,7 +24,7 @@ class RacingKingsChessAgent:
 
     def __init__(self, env, mvt, nn, device, mcts_config, train_config=None, pretrained_w=None):
         """
-        :param RacingKingsEnv env:   The environment that interacts with the agent.
+        :param ChessEnv env:         The environment that interacts with the agent.
         :param MoveTranslator mvt:   API used to translate action to their corresponding IDs.
         :param torch.nn.Module nn:   The Neural Network to be trained from self play.
         :param torch.device device:  Device on which to train the model.
@@ -77,7 +75,7 @@ class RacingKingsChessAgent:
             examples.append((legal_actions, st, None, pi))
 
             # play the next move in the environment
-            self._env.play_move(self._mvt.get_move(best_action))
+            self._env.play_move(self._mvt.move_from_id(best_action))
 
         # outcome of the game
         result = 0 if self._env.moves == self._train_params['max_game_len'] else self._env.winner
@@ -133,16 +131,15 @@ class RacingKingsChessAgent:
 
     def _train_nn(self, training_deque, optimizer, scheduler):
         """
-        :param deque training_deque:                            Deque containing all the train data.
-        :param torch.optim.SGD optimizer:                       Optimizer for the loss function.
-        :param torch.optim.lr_scheduler.MultiStepLR scheduler:  Scheduler used to adapt the
-                                                                    learning rate.
+        :param deque training_deque:                      Deque with the most recent training data.
+        :param optim.SGD optimizer:                       Optimizer for the loss function.
+        :param optim.lr_scheduler.MultiStepLR scheduler:  Scheduler used to adapt the learning rate.
         :return:
         """
         # create a dataset with the current examples and a dataloader for it
         train_dataset = SelfPlayDataset(training_deque, device=self._device)
         # noinspection PyUnresolvedReferences
-        train_dataloader = torch.utils.data.Dataloader(dataset=dataset, shuffle=True,
+        train_dataloader = torch.utils.data.Dataloader(dataset=train_dataset, shuffle=True,
                                                        batch_size=self._train_params['batch_size'])
 
         for epoch in range(self._train_params['epochs']):
@@ -157,6 +154,6 @@ class RacingKingsChessAgent:
 
         Play a game against a trained alpha zero agent. The board should be displayed in your
         screen (make sure you have followed the steps in the docstring of the
-        src/racing_kings/environment/racing_kings.py in order to be able tp display the board).
+        src/environment/base_chess_env.py script).
         """
         pass

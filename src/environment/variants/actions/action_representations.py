@@ -3,24 +3,27 @@ Created on February 20 2021
 
 @author: Andreas Spanopoulos
 
-Module used to define the actions that can be taken in the Racing Kings environment, and provide
-an interface between the actual actions and their corresponding IDs.
+Module used to define the actions that can be taken in a Chess environment, and provide an interface
+between the actual actions and their corresponding IDs.
 """
 
-import pprint
+from abc import abstractmethod
 
 
 class MoveTranslator:
     """ interface between actual chess moves and their corresponding IDs """
 
-    def __init__(self):
-        """ constructor """
+    def __init__(self, files, ranks):
+        """
+        :param list[str] files:       The files of the chess board.
+        :param list[str] ranks:       The ranks of the chess board.
+        """
 
-        self._files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
-        self._ranks = ['1', '2', '3', '4', '5', '6', '7', '8']
-        self._size = (8, 8)
-        lookups = self._build_square_coordinate_lookups()
-        self._square_to_coordinate, self._coordinate_to_square = lookups
+        self._files = files
+        self._ranks = ranks
+        self._size = (len(ranks), len(files))
+        self._square_to_coordinate, self._coordinate_to_square = \
+            self._build_square_coordinate_lookups()
         self._move_to_id, self._id_to_move = self._build_id_and_move_lookups()
 
     def _build_square_coordinate_lookups(self):
@@ -80,6 +83,7 @@ class MoveTranslator:
         return [self._coordinate_to_square[knight_jump] for knight_jump in knight_jumps
                 if self._is_within_board(knight_jump)]
 
+    @abstractmethod
     def _build_id_and_move_lookups(self):
         """
         :return:  Dictionaries that map moves to their respective IDs and vice-versa.
@@ -88,25 +92,7 @@ class MoveTranslator:
         The dictionaries look like this:  move_to_id['a1a2'] = 0,
                                           coordinate_to_square[1] = 'a1a3'
         """
-        move_id = 0
-        move_to_id = {}
-        id_to_move = {}
-
-        for coordinate, square in self._coordinate_to_square.items():
-
-            squares_reachable_by_queen_move = self._squares_queens_move_away(coordinate)
-            squares_reachable_by_knight_move = self._squares_knights_move_away(coordinate)
-            reachable_squares = squares_reachable_by_queen_move + squares_reachable_by_knight_move
-
-            for reachable_square in reachable_squares:
-
-                move = square + reachable_square
-                move_to_id[move] = move_id
-                id_to_move[move_id] = move
-
-                move_id += 1
-
-        return move_to_id, id_to_move
+        pass
 
     @property
     def num_actions(self):
@@ -116,7 +102,7 @@ class MoveTranslator:
         """
         return len(self._move_to_id)
 
-    def get_move_id(self, move):
+    def id_from_move(self, move):
         """
         :param str move:  A Racing Kings Chess move.
 
@@ -126,7 +112,7 @@ class MoveTranslator:
         """
         return self._move_to_id[move]
 
-    def get_move(self, _id):
+    def move_from_id(self, _id):
         """
         :param int _id:  An ID representing a Racing Kings Chess move.
 
@@ -146,12 +132,4 @@ class MoveTranslator:
 
 
 if __name__ == "__main__":
-
-    pp = pprint.PrettyPrinter(indent=4)
-
-    m = MoveTranslator()
-
-    # pp.pprint(m.move_to_id)
-    # print(len(m.id_to_move))
-
-    # print(m.get_move(69))
+    pass

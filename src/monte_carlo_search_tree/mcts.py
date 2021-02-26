@@ -13,10 +13,9 @@ import torch.nn.functional as F
 import operator
 import numpy as np
 
-from src.environment.racing_kings import RacingKingsEnv
-from src.environment.action_representations import MoveTranslator
-from src.neural_network.network import NeuralNetwork
 from src.utils.config_parsing_utils import parse_config_file
+from src.environment.variants.base_chess_env import ChessEnv
+from src.environment.variants.actions.action_representations import MoveTranslator
 
 
 class Node:
@@ -180,10 +179,10 @@ class MCTS:
 
     def __init__(self, env, nn, mvt, hyperparams):
         """
-        :param RacingKingsEnv env:   Current Environment.
-        :param torch.nn.Module. nn:  Neural Network used for prior probability prediction.
-        :param MoveTranslator mvt:   Move Translator object used to convert move to their IDs.
-        :param dict hyperparams:     Dictionary containing hyperparameters for the model.
+        :param ChessEnv env:        Current Chess Environment the agent operates in.
+        :param torch.nn.Module.nn:  Neural Network used for prior probability prediction.
+        :param MoveTranslator mvt:  Move Translator object used to convert move to their IDs.
+        :param dict hyperparams:    Dictionary containing hyperparameters for the model.
         """
         # basic variables of the class
         self.env = env
@@ -209,7 +208,7 @@ class MCTS:
 
     def _actions_that_lead_to_terminal_state(self, _env, available_actions):
         """
-        :param RacingKingsEnv _env:          The environment of the agent.
+        :param ChessEnv _env:                Current Chess Environment the agent operates in.
         :param list[int] available_actions:  A list containing all the available action IDs.
 
         :return:  A list containing all the action IDs that lead to a terminal state.
@@ -218,7 +217,7 @@ class MCTS:
         terminal_actions = []
         for action in available_actions:
             env_copy = _env.copy()
-            env_copy.play_move(self.mvt.get_move(action))
+            env_copy.play_move(self.mvt.move_from_id(action))
             if env_copy.is_finished:
                 terminal_actions.append(action)
 
@@ -246,8 +245,8 @@ class MCTS:
 
     def _select_expand_backup(self, node, env_copy):
         """
-        :param Node node:                The current Node we are in the Search Tree.
-        :param RacingKingsEnv env_copy:  A copy of the original environment used for MCTS.
+        :param Node node:          The current Node we are in the Search Tree.
+        :param ChessEnv env_copy:  A copy of the original environment used for MCTS.
 
         :returns:  The backup value of the first leaf or terminal node that is encountered.
         :rtype:    float
@@ -261,7 +260,7 @@ class MCTS:
 
             # pick the next node from the next action
             best_action = node.action_with_highest_ucb_score(self.hyperparameters['c_puct'])
-            env_copy.play_move(self.mvt.get_move(best_action))
+            env_copy.play_move(self.mvt.move_from_id(best_action))
             next_node = node.get_child_node_from_action(best_action)
 
             # get the backed up value from the child Node
@@ -327,7 +326,7 @@ class MCTS:
         """
         :return:  A Tensor containing the probability of each action from the root Node being
                     chosen by the optimal policy.
-        :rtype:   torch.Tensor
+        :rtype:   list[int]
 
         Computes the value: pi(a|s) = N(s_root, a) ^ {1/tau} / sum_b N(s_root, b) ^ {1/tau}
         Basically computes an estimation of the optimal policy using the visit count of every
@@ -344,13 +343,16 @@ class MCTS:
 # for testing purposes
 if __name__ == "__main__":
 
+    from src.environment.variants.racing_kings import RacingKingsEnv
     environment = RacingKingsEnv()
-    move_translator = MoveTranslator()
+    from src.environment.variants.actions.racing_kings_actions import RacingKingsActions
+    move_translator = RacingKingsActions()
 
     nn_config_path = '../../configurations/neural_network_architecture.ini'
     arch = parse_config_file(nn_config_path, _type='nn_architecture')
     arch['input_shape'] = torch.Tensor(environment.current_state_representation).shape
     arch['num_actions'] = move_translator.num_actions
+    from src.neural_network.network import NeuralNetwork
     model = NeuralNetwork(arch, torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
     model.eval()
 

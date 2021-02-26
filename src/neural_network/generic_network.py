@@ -18,20 +18,18 @@ import torch.nn.functional as F
 
 from src.neural_network.network_utils import compute_output_shape, same_padding
 from src.utils.config_parsing_utils import parse_config_file
-from src.environment.racing_kings import RacingKingsEnv
-from src.environment.action_representations import MoveTranslator
 
 
 class GenericNeuralNetwork(nn.Module):
     """ Neural Network class used during Training of the Alpha Zero algorithm """
 
-    def __init__(self, architecture, device):
+    def __init__(self, architecture, _device):
         """
         :param dict architecture:    Dictionary describing the architecture of the model.
-        :param torch.device device:  The device in which the model currently operates.
+        :param torch.device _device:  The device in which the model currently operates.
         """
         super(GenericNeuralNetwork, self).__init__()
-        self.device = device
+        self.device = _device
 
         # define the architecture specifics
         self.conv_architecture = architecture['conv']
@@ -254,13 +252,13 @@ class GenericNeuralNetwork(nn.Module):
     def criterion(z, v, pi, p):
         """
         :param torch.Tensor z:   Tensor containing the target values for the value head.
-                                    [N x num_actions]
+                                    [N x 1]
         :param torch.Tensor v:   Tensor containing the predicted value head values.
-                                    [N x num_actions]
+                                    [N x 1]
         :param torch.Tensor pi:  Tensor containing the target values for the policy head.
-                                    [N x 1]
+                                    [N x num_actions]
         :param torch.Tensor p:   Tensor containing the predicted policy head values.
-                                    [N x 1]
+                                    [N x num_actions]
 
         :return:  The value of the Alpha Zero Loss function when given the above tensors.
         :rtype:   torch.Tensor
@@ -275,16 +273,18 @@ class GenericNeuralNetwork(nn.Module):
 
 # for testing purposes
 if __name__ == "__main__":
-
+    from src.environment.variants.racing_kings import RacingKingsEnv
     env = RacingKingsEnv()
-    mvt = MoveTranslator()
+    from src.environment.variants.actions.racing_kings_actions import RacingKingsActions
+    mvt = RacingKingsActions()
 
     config_path = '../../configurations/generic_neural_network_architecture.ini'
     arch = parse_config_file(config_path, _type='generic_nn_architecture')
     arch['input_shape'] = torch.Tensor(env.current_state_representation).shape
     arch['num_actions'] = mvt.num_actions
 
-    model = GenericNeuralNetwork(arch, torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = GenericNeuralNetwork(arch, device).to(device)
 
     inp = torch.FloatTensor(env.current_state_representation)
     # convert from (99, 8, 8) -> (1, 99, 8, 8)

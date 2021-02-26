@@ -6,8 +6,6 @@ Created on February 18 2021
 Utility functions for the Neural Network of the Alpha Zero algorithm.
 """
 
-import torch
-import torch.nn as nn
 
 from src.utils.error_utils import InvalidArchitectureError
 
@@ -81,47 +79,3 @@ def same_padding(current_shape, kernel_size, stride):
         padding.append(((current_shape[i] - 1) * s + k - current_shape[i]) // 2)
 
     return tuple(padding)
-
-
-# print(compute_same_padding((8, 8), 3, 1))
-
-
-
-# y = torch.randn(3, 10)
-# print(y)
-# s = nn.Softmax(0)
-# ls = nn.LogSoftmax(0)
-#
-# ys = s(y)
-# print(ys)
-#
-# ysl = ls(y)
-# print(ysl)
-#
-# print(torch.sum(ys, dim=0))
-# print(torch.sum(ysl.exp(), dim=0))
-#
-# exit()
-
-# x = torch.randn(12, 256, 8, 8)
-# print(x)
-# print(x.shape)
-#
-#
-# pip = torch.nn.Sequential(
-#     nn.Conv2d(in_channels=256, out_channels=2, kernel_size=(1, 1),
-#               stride=(1, 1), padding=(0, 0), padding_mode='zeros'),
-#     nn.BatchNorm2d(num_features=2),
-#     nn.ReLU(),
-#     nn.Flatten(start_dim=1, end_dim=-1),
-#     nn.Linear(in_features=2*8*8, out_features=8*8*64),
-#     nn.LogSoftmax(dim=0)
-# )
-#
-# print(pip(x).shape)
-
-# conv = torch.nn.Conv2d(in_channels=99, out_channels=256, kernel_size=3, stride=1, padding=1,
-#                        padding_mode='zeros')
-#
-# print(conv(x))
-# print(conv(x).shape)

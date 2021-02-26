@@ -6,18 +6,6 @@ Created on February 15 2021
 Utility function used for manipulation of chess boards and positions (states).
 """
 
-import pprint
-
-
-def piece_arrangement_from_fen(fen):
-    """
-    :param str fen:  The FEN string describing a position (state) in a Racing Kings Chess board.
-
-    :return:  The first section of the FEN string describing the pieces arrangement on the board.
-    :rtype:   str
-    """
-    return fen.split()[0]
-
 
 def fen_to_board_pieces(fen, piece, n=8):
     """
@@ -113,7 +101,7 @@ def repetition_plane(repetitions, n=8):
     :param int n:            Chess game dimension (should always be 8).
 
     :return:  An 8 x 8 list containing the same value for each entry, the repetitions number.
-    :rtype:   list[list]
+    :rtype:   list[list[int]]
 
     This function computes the n x n repetitions plane.
     """
@@ -126,7 +114,7 @@ def color_plane(color, n=8):
     :param int n:      Chess game dimension (should always be 8).
 
     :return:  An 8 x 8 list containing the same value for each entry, specified by the color.
-    :rtype:   list[list]
+    :rtype:   list[list[int]]
 
     This function computes the n x n colour plane (1s for White, 0s for black).
     """
@@ -139,7 +127,7 @@ def total_moves_plane(moves, n=8):
     :param int n:      Chess game dimension (should always be 8).
 
     :return:  An 8 x 8 list containing the same value for each entry, the moves number.
-    :rtype:   list[list]
+    :rtype:   list[list[int]]
 
     This function computes the n x n total moves plane.
     """
@@ -152,7 +140,7 @@ def no_progress_count_plane(no_progress, n=8):
     :param int n:            Chess game dimension (should always be 8).
 
     :return:  An 8 x 8 list containing the same value for each entry, the no_progress number.
-    :rtype:   list[list]
+    :rtype:   list[list[int]]
 
     This function computes the n x n no progress count plane.
     """
@@ -191,4 +179,4 @@ def update_repetitions_setup(repetitions_twice, repetitions_once, players_pieces
 
 
 if __name__ == "__main__":
-    pp = pprint.PrettyPrinter(indent=4)
+    pass
