@@ -33,7 +33,7 @@ class RacingKingsEnv(ChessEnv):
         :param int t_history:            The length of the historic (previous) positions of the
                                             board to store. Used to take threefold repetition into
                                             account. In the paper, the default values is T = 8.
-        :param int n:                    Chess game dimension (should always be 8).
+        :param int n:                    Chess game dimension (usually 8).
 
         Initializes the Racing Kings Chess environment. If an already initialized board and
         repetitions counts dictionary are passed, then it initializes it with these values.
@@ -59,7 +59,7 @@ class RacingKingsEnv(ChessEnv):
         :rtype:   None
 
         # ToDo: explain the input, either here or in the README of the NeuralNetwork package.
-        Computes the list of 8 x 8 lists that will be used for input in the Neural Network.
+        Computes the list of n x n lists that will be used for input in the Neural Network.
         """
 
         # if this method is being called for the starting state

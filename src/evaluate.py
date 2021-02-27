@@ -23,6 +23,10 @@ from src.agent.chess_agent import RacingKingsChessAgent
 def main(args):
     """ main() driver function """
 
+    # set logging format
+    fmt = "(%(filename)s:%(lineno)d) [%(levelname)s]: %(message)s"
+    logging.basicConfig(level=logging.INFO, format=fmt)
+
     # create the environment and an API used to translate actions into their corresponding IDs
     env = RacingKingsEnv()
     mvt = RacingKingsActions()
@@ -54,10 +58,15 @@ def main(args):
     result = chess_agent.play_against(args.white)
 
     # print winner information
-    if result == 1:
-        logging.info('White won!')
-    elif result == -1:
-        logging.info('Black won!')
+    print()
+    if result == 1 and args.white:
+        logging.info('Player won with White!')
+    elif result == -1 and not args.white:
+        logging.info('Player won with Black!')
+    elif result == 1 and not args.white:
+        logging.info('Agent won with White!')
+    elif result == -1 and args.white:
+        logging.info('Agent won with Black!')
     else:
         logging.info('Draw!')
 

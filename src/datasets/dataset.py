@@ -18,7 +18,7 @@ class SelfPlayDataset(torch.utils.data.Dataset):
 
     def __init__(self, train_deque, device):
         """
-        :param deque train_deque:    Deque containing all the most recent training examples.
+        :param deque train_deque:    Deque containing the most recent training examples.
         :param torch.device device:  The device on which the data should be transferred to.
         """
         self.deque = train_deque

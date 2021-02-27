@@ -45,7 +45,7 @@ def starting_piece_setup(starting_fen, players_pieces, t_history=8, n=8):
     """
 
     setup = []
-    # for every piece of every player, compute its last 8 positions on the board
+    # for every piece of every player, compute its last T positions on the board
     for player_pieces in players_pieces:
         for piece in player_pieces:
             # if less than t_history moves have been played consider the previous values to be 0
@@ -66,7 +66,7 @@ def current_piece_setup(fen, players_pieces, previous_setup, t_history=8, n=8):
     :param list players_pieces:  List containing a list with the pieces of each player respectively.
     :param list previous_setup:  The list containing the full previous setup of the state.
     :param int t_history:        The length of the historic (previous) positions of each piece.
-    :param int n:                Chess game dimension (should always be 8).
+    :param int n:                Chess game dimension (usually 8).
 
     :return:  A list of lists of lists containing the representation of the current board state.
     :rtype:   list[list[list[int]]]
@@ -78,7 +78,7 @@ def current_piece_setup(fen, players_pieces, previous_setup, t_history=8, n=8):
     for idx, piece in enumerate(players_pieces[0]):
         # compute current position of the piece, as it may have been removed due to the last move
         piece_config = fen_to_board_pieces(fen, piece, n)
-        # the 8 previous opponent setup planes become the planes of the current player
+        # the T previous opponent setup planes become the planes of the current player
         piece_history = [piece_config,
                          *previous_setup[(opponent_num_pieces + idx) * t_history:
                                          (opponent_num_pieces + 1 + idx) * t_history - 1]]
@@ -98,9 +98,9 @@ def current_piece_setup(fen, players_pieces, previous_setup, t_history=8, n=8):
 def repetition_plane(repetitions, n=8):
     """
     :param int repetitions:  Number of times a chess position (state) has been reached.
-    :param int n:            Chess game dimension (should always be 8).
+    :param int n:            Chess game dimension (usually 8).
 
-    :return:  An 8 x 8 list containing the same value for each entry, the repetitions number.
+    :return:  An n x n list containing the same value for each entry, the repetitions number.
     :rtype:   list[list[int]]
 
     This function computes the n x n repetitions plane.
@@ -111,9 +111,9 @@ def repetition_plane(repetitions, n=8):
 def color_plane(color, n=8):
     """
     :param int color:  Integer value denoting the colour of a player (1 for white, 0 for black).
-    :param int n:      Chess game dimension (should always be 8).
+    :param int n:      Chess game dimension (usually 8).
 
-    :return:  An 8 x 8 list containing the same value for each entry, specified by the color.
+    :return:  An n x n list containing the same value for each entry, specified by the color.
     :rtype:   list[list[int]]
 
     This function computes the n x n colour plane (1s for White, 0s for black).
@@ -137,9 +137,9 @@ def total_moves_plane(moves, n=8):
 def no_progress_count_plane(no_progress, n=8):
     """
     :param int no_progress:  Integer value denoting the number of total no-progress moves made.
-    :param int n:            Chess game dimension (should always be 8).
+    :param int n:            Chess game dimension (usually 8).
 
-    :return:  An 8 x 8 list containing the same value for each entry, the no_progress number.
+    :return:  An n x n list containing the same value for each entry, the no_progress number.
     :rtype:   list[list[int]]
 
     This function computes the n x n no progress count plane.
@@ -155,7 +155,7 @@ def update_repetitions_setup(repetitions_twice, repetitions_once, players_pieces
     :param list players_pieces:    List containing lists with the pieces of each player.
     :param list previous_setup:    The list containing the full previous setup of the state.
     :param int t_history:          The length of the historic (previous) positions of each piece.
-    :param int n:                  Chess game dimension (should always be 8).
+    :param int n:                  Chess game dimension (usually 8).
 
     :return:  A list of lists of lists containing the repetition planes of the current board state.
     :rtype:   list[list[list[int]]]

@@ -13,7 +13,9 @@ import torch.optim as optim
 
 from tqdm import tqdm
 from collections import deque
-from src.utils.main_utils import save_pytorch_model, load_pytorch_model, pad_to_maxlen
+from chessboard import display
+from src.utils.main_utils import save_pytorch_model, load_pytorch_model, pad_to_maxlen, \
+    get_legal_move_from_player
 from src.environment.variants.base_chess_env import ChessEnv
 from src.environment.actions.action_representations import MoveTranslator
 from src.monte_carlo_search_tree.mcts import MCTS
@@ -100,17 +102,13 @@ class RacingKingsChessAgent:
 
         return data
 
-    def _train_nn(self, training_deque, optimizer, scheduler):
+    def _train_nn(self, dataloader, optimizer, scheduler):
         """
-        :param deque training_deque:                      Deque with the most recent training data.
+        :param torch.utils.data.Dataloader dataloader:    Deque with the most recent training data.
         :param optim.SGD optimizer:                       Optimizer for the loss function.
         :param optim.lr_scheduler.MultiStepLR scheduler:  Scheduler used to adapt the learning rate.
         :return:
         """
-        # create a dataset with the current examples and a dataloader for it
-        train_dataset = SelfPlayDataset(training_deque, device=self._device)
-        train_dataloader = torch.utils.data.DataLoader(dataset=train_dataset, shuffle=True,
-                                                       batch_size=self._train_params['batch_size'])
 
         # place the neural network in train mode
         self._nn.train()
@@ -119,7 +117,7 @@ class RacingKingsChessAgent:
         for epoch in range(self._train_params['epochs']):
 
             # for legal_actions, st, z, pi in train_dataloader:
-            for legal_actions, st, z, pi in train_dataloader:
+            for legal_actions, st, z, pi in dataloader:
 
                 # reshape target
                 z = z.reshape(-1, 1)
@@ -175,8 +173,8 @@ class RacingKingsChessAgent:
                                                    milestones=self._train_params['milestones'],
                                                    gamma=self._train_params['gamma'])
 
-        # define the queue where the max deque_maxlen training examples will be stored
-        training_deque = deque([], maxlen=self._train_params['max_deque_len'])
+        # define the replay buffer where the most recent deque_maxlen training examples are stored
+        replay_buffer = deque([], maxlen=self._train_params['max_deque_len'])
 
         # repeat the following pipeline: a) Play a number of self play episodes, b) update NN
         for iteration in tqdm(range(self._train_params['iterations']), desc='Self-play Pipeline'):
@@ -186,18 +184,25 @@ class RacingKingsChessAgent:
 
             # execute episodes of self play, and update the deque accordingly
             for _ in range(self._train_params['self_play_episodes']):
-                training_deque += self.play_episode()
+                replay_buffer += self.play_episode()
+
+            # create a dataset with the current examples and a dataloader for it
+            dataset = SelfPlayDataset(replay_buffer, device=self._device)
+            dataloader = torch.utils.data.DataLoader(dataset=dataset,
+                                                     batch_size=self._train_params['batch_size'],
+                                                     shuffle=True)
 
             # train the NN with the most recent examples from self play
-            self._train_nn(training_deque, optimizer, scheduler)
+            self._train_nn(dataloader, optimizer, scheduler)
 
             # save the weights if it's time to
             if iteration % self._train_params['checkpoint_every'] == 0:
                 self._save_nn_weights(iteration)
 
-    def play_against(self, player_colour):
+    def play_against(self, player_has_white):
         """
-        :param bool player_colour:  True if the opponent of AlphaZero starts with White; Else False.
+        :param bool player_has_white:  True if the opponent of AlphaZero starts with White;
+                                        Else False.
 
         :return:  The outcome of the game (1 if white wins, -1 if black wins and 0 for draw)
         :rtype:   int
@@ -206,4 +211,45 @@ class RacingKingsChessAgent:
         screen (make sure you have followed the steps in the docstring of the
             src/environment/base_chess_env.py script).
         """
-        pass
+        # first reset the environment, as this method may be called multiple times
+        self._env.reset()
+
+        # display the board, and keep it up until the game is over
+        display.start(self._env.fen)
+
+        # if the player starts as white, get his first move
+        if player_has_white:
+            move = get_legal_move_from_player(self._env.legal_moves, self._env.legal_moves_san)
+            if move == 'resign':
+                display.terminate()
+                return -1
+            self._env.play_move(move)
+            display.update(self._env.fen)
+
+        # while the game is not over, keep iterating
+        while not self._env.is_finished:
+
+            # agent makes a move
+            mcts = MCTS(self._env, self._nn, self._mvt, self._mcts_config)
+            mcts.simulate()
+            agent_move = self._mvt.move_from_id(mcts.sample_best_action())
+            print(f'Agent plays: {self._env.san_from_uci(agent_move)}\n')
+            self._env.play_move(agent_move)
+            display.update(self._env.fen)
+
+            # if the game terminates with the agents move
+            if self._env.is_finished:
+                display.terminate()
+                return self._env.winner
+
+            # else, get the next move from the player
+            move = get_legal_move_from_player(self._env.legal_moves, self._env.legal_moves_san)
+            if move == 'resign':
+                display.terminate()
+                return -1 if player_has_white else 1
+            self._env.play_move(move)
+            display.update(self._env.fen)
+
+        # game has finished, close the display and return the result
+        display.terminate()
+        return self._env.winner

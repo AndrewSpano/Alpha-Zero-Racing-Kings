@@ -67,7 +67,7 @@ class ChessEnv:
     @property
     def current_state_representation(self):
         """
-        :return:  A list of 8 x 8 lists, used as input for the Neural Network.
+        :return:  A list of n x n lists, used as input for the Neural Network.
         :rtype:   list[list[list[int]]
         """
         return copy.deepcopy(self._nn_input)
@@ -109,11 +109,20 @@ class ChessEnv:
     @property
     def legal_moves(self):
         """
-        :return:  A list containing all the legal moves (as strings) that can be played in the
-                    current position (state).
-        :rtype:   list(str)
+        :return:  A list containing all the legal moves (as strings) in UCI notation that can be
+                    played in the current position (state).
+        :rtype:   list[str]
         """
         return [self._board.uci(uci) for uci in list(self._board.legal_moves)]
+
+    @property
+    def legal_moves_san(self):
+        """
+        :return:  A list containing all the legal moves (as string) in SAN notation that can be
+                    play in the current position (state).
+        :rtype:   list[str]
+        """
+        return [self._board.san(self._board.parse_uci(uci)) for uci in self.legal_moves]
 
     @property
     def is_finished(self):
@@ -138,6 +147,15 @@ class ChessEnv:
         if result == '*':
             raise GameIsNotOverError
         return 1 if result == '1-0' else -1 if result == '0-1' else 0
+
+    def san_from_uci(self, uci):
+        """
+        :param str uci:  A string representing a chess move in UCI notation.
+
+        :return:  A string representing the same move in Standard Algebraic Notation (san).
+        :rtype:   str
+        """
+        return self._board.san(self._board.parse_uci(uci))
 
     def is_terminal_move(self, move):
         """
@@ -205,7 +223,7 @@ class ChessEnv:
         :return:  None
         :rtype:   None
 
-        Computes the list of 8 x 8 lists that will be used for input in the Neural Network.
+        Computes the list of n x n lists that will be used for input in the Neural Network.
         """
         pass
 

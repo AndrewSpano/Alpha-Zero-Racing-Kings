@@ -35,6 +35,23 @@ def pad_to_maxlen(lst, maxlen):
         lst.append(lst[-1])
 
 
+def get_legal_move_from_player(legal_moves_uci, legal_moves_san, warning_frequency=3):
+    """ asks user to input a move for a specific chess position until the move he gives is legal """
+    count_mistakes = 0
+    move = input('Enter a move for the current position: ')
+    while move not in legal_moves_uci and move not in legal_moves_san and move != 'resign':
+        print(f'Move {move} is invalid for the current position.')
+        count_mistakes += 1
+        if count_mistakes == warning_frequency:
+            print('Available moves are:')
+            print(f"\tStandard Algebraic Notation: {legal_moves_san}\n"
+                  f"\tUniversal Chess Interface Notation: {legal_moves_uci}\n"
+                  f"\tResign: 'resign'")
+            count_mistakes = 0
+        move = input('Enter another move: ')
+    return move
+
+
 def parse_train_input(args=None):
     """ parse input from the terminal/command line for the train.py python script """
 
@@ -128,7 +145,7 @@ def parse_evaluate_input(args=None):
                         choices=['cpu', 'cuda'], nargs='?', default='cpu',
                         help="Which device to use when running the model: 'cpu' or 'cuda'.")
 
-    # whether the non-alpha_zero player wants to start was white (if specified)
+    # whether the non-alpha_zero player wants to start as white (if specified)
     parser.add_argument('-w', '--white', action='store_true',
                         help='If specified, then Alpha Zero plays black. Else, white.')
 
