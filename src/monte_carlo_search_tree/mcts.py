@@ -10,7 +10,6 @@ Implements Monte Carlo Tree Search.
 import time
 import torch
 import torch.nn.functional as F
-import operator
 import numpy as np
 
 from src.utils.config_parsing_utils import parse_config_file
@@ -152,26 +151,26 @@ class Node:
         ucbs = {action: self._ucb_score(action, c_puct, sum_n) for action in self.actions}
 
         # Node with highest UCB score
-        return max(ucbs.items(), key=operator.itemgetter(1))[0]
+        return max(ucbs, key=lambda key: ucbs[key])
 
-    def compute_optimal_policy(self, total_moves, tau):
+    def sample_optimal_action(self, tau):
         """
-        :param int total_moves:  Number of total actions that can be taken from any state.
-        :param float tau:        Temperature parameter used to promote exploration early in the
-                                    game.
+        :param float tau:  Temperature parameter used to promote exploration early in the game.
 
-        :return:  A list describing the optimal policy found by the MCTS simulations.
-        :rtype:   list[int]
+        :return:  The ID of the best action sampled.
+        :rtype:   int
         """
-        # sum of visit counts
-        sum_n = sum([visit_count ** (1 / tau) for action, visit_count in self.N.items()])
+        if tau != 0:
+            # sum of visit counts
+            sum_n = sum([visit_count ** (1 / tau) for action, visit_count in self.N.items()])
+            # create a list with the action value probability pi(a|s) for each legal action
+            pi = [(self.N[action] ** (1 / tau)) / sum_n for action in self.actions]
 
-        # initialize all action probabilities with 0, and change the value only for the legal ones
-        pi = [0] * total_moves
-        for action in self.actions:
-            pi[action] = (self.N[action] ** (1 / tau)) / sum_n
-
-        return pi
+            # sample randomly from the distribution pi(a|s)
+            return np.random.choice(self.actions, p=pi)
+        else:
+            # return child with highest visit count
+            return max(self.N, key=lambda key: self.N[key])
 
 
 class MCTS:
@@ -185,26 +184,26 @@ class MCTS:
         :param dict hyperparams:    Dictionary containing hyperparameters for the model.
         """
         # basic variables of the class
-        self.env = env
-        self.nn = nn
-        self.mvt = mvt
-        self.hyperparameters = hyperparams
-        self.root_node = Node()
+        self._env = env
+        self._nn = nn
+        self._mvt = mvt
+        self._hyperparameters = hyperparams
+        self._root_node = Node()
 
         # compute the available action from the root node
-        available_actions_from_root = self.mvt.get_move_ids_from_uci(self.env.legal_moves)
+        available_actions_from_root = self._mvt.get_move_ids_from_uci(self._env.legal_moves)
         terminal_actions = self._actions_that_lead_to_terminal_state(env,
                                                                      available_actions_from_root)
 
         # compute prior probabilities for each available action using the NN
         with torch.no_grad():
-            p, v = self.nn(torch.Tensor(self.env.current_state_representation).unsqueeze(0))
+            p, v = self._nn(torch.Tensor(self._env.current_state_representation).unsqueeze(0))
         action_to_prior = self._compute_prior_probabilities(available_actions_from_root, p)
 
         # initialize Search Tree: expand the root Node
-        self.root_node.expand(available_actions_from_root, action_to_prior, terminal_actions)
-        self.root_node.add_dirichlet_noise_to_prior_probabilities(hyperparams['dirichlet_alpha'],
-                                                                  hyperparams['dirichlet_epsilon'])
+        self._root_node.expand(available_actions_from_root, action_to_prior, terminal_actions)
+        self._root_node.add_dirichlet_noise_to_prior_probabilities(hyperparams['dirichlet_alpha'],
+                                                                   hyperparams['dirichlet_epsilon'])
 
     def _actions_that_lead_to_terminal_state(self, _env, available_actions):
         """
@@ -214,14 +213,8 @@ class MCTS:
         :return:  A list containing all the action IDs that lead to a terminal state.
         :rtype:   list[int]
         """
-        terminal_actions = []
-        for action in available_actions:
-            env_copy = _env.copy()
-            env_copy.play_move(self.mvt.move_from_id(action))
-            if env_copy.is_finished:
-                terminal_actions.append(action)
-
-        return terminal_actions
+        return [action for action in available_actions
+                if _env.is_terminal_move(self._mvt.move_from_id(action))]
 
     def _compute_prior_probabilities(self, actions, p):
         """
@@ -235,13 +228,13 @@ class MCTS:
         p = p.squeeze(0)
 
         # initialize a mask tensor with -infinite values where the actions are illegal
-        mask = torch.Tensor([float('-inf')] * self.mvt.num_actions)
+        mask = torch.Tensor([float('-inf')] * self._mvt.num_actions)
         mask[actions] = 0
 
         # run the masked output through Softmax to get the prior probabilities of legal actions
         prior_probabilities = F.softmax(p + mask, dim=0)
 
-        return {action: prior_probabilities[action] for action in actions}
+        return {action: prior_probabilities[action].item() for action in actions}
 
     def _select_expand_backup(self, node, env_copy):
         """
@@ -259,8 +252,8 @@ class MCTS:
         if not (node.is_leaf or node.is_terminal):
 
             # pick the next node from the next action
-            best_action = node.action_with_highest_ucb_score(self.hyperparameters['c_puct'])
-            env_copy.play_move(self.mvt.move_from_id(best_action))
+            best_action = node.action_with_highest_ucb_score(self._hyperparameters['c_puct'])
+            env_copy.play_move(self._mvt.move_from_id(best_action))
             next_node = node.get_child_node_from_action(best_action)
 
             # get the backed up value from the child Node
@@ -281,27 +274,25 @@ class MCTS:
 
                 # draw
                 if winner == 0:
-                    result = 0
-                elif (winner == 1 and self.env.side_to_move == 'w') or \
-                     (winner == -1 and self.env.side_to_move == 'b'):
-                    result = 1
+                    return 0
+                elif (winner == 1 and self._env.side_to_move == 'w') or \
+                     (winner == -1 and self._env.side_to_move == 'b'):
+                    return 1
                 else:
-                    result = -1
-
-                print(f'Result: {result}')
-                return result
+                    return -1
 
             # else if the Node is a leaf Node
             if node.is_leaf:
 
                 # get the available actions and those that lead to a terminal state
-                available_actions = self.mvt.get_move_ids_from_uci(env_copy.legal_moves)
+                available_actions = self._mvt.get_move_ids_from_uci(env_copy.legal_moves)
                 terminal_actions = self._actions_that_lead_to_terminal_state(env_copy,
                                                                              available_actions)
 
                 # get action probabilities and value for current Node
                 with torch.no_grad():
-                    p, v = self.nn(torch.Tensor(env_copy.current_state_representation).unsqueeze(0))
+                    st = torch.Tensor(env_copy.current_state_representation).unsqueeze(0)
+                    p, v = self._nn(st)
                 action_to_prior = self._compute_prior_probabilities(available_actions, p)
 
                 # expand the node
@@ -318,26 +309,32 @@ class MCTS:
         Simulates num_iterations searches in the MCTS, expanding the Tree and backing up values
         along the way.
         """
-        simulations = self.hyperparameters['num_iterations']
+        simulations = self._hyperparameters['num_iterations']
         for _ in range(simulations):
-            self._select_expand_backup(self.root_node, self.env.copy())
+            self._select_expand_backup(self._root_node, self._env.copy())
 
-    def sample_probabilities(self):
+    def sample_action(self):
         """
-        :return:  A Tensor containing the probability of each action from the root Node being
-                    chosen by the optimal policy.
-        :rtype:   list[int]
+        :return:  The sampled action from the Root Node.
+        :rtype:   int
 
-        Computes the value: pi(a|s) = N(s_root, a) ^ {1/tau} / sum_b N(s_root, b) ^ {1/tau}
-        Basically computes an estimation of the optimal policy using the visit count of every
-        action from the root Node. Actions that are illegal get a value of 0.
+        Computes the value: pi(a|s) = N(s_root, a) ^ {1/tau} / sum_b N(s_root, b) ^ {1/tau},
+        and then samples and action from that distribution.
         """
-        tau = self.hyperparameters['temperature_tau']
-        degrade_at_step = self.hyperparameters['degrade_at_step']
-        degraded_tau = self.hyperparameters['degraded_temperature']
-        tau = tau if self.env.moves < degrade_at_step else degraded_tau
+        tau = self._hyperparameters['temperature_tau']
+        degrade_at_step = self._hyperparameters['degrade_at_step']
+        tau = tau if self._env.moves < degrade_at_step else 0
 
-        return self.root_node.compute_optimal_policy(self.mvt.num_actions, tau)
+        return self._root_node.sample_optimal_action(tau=tau)
+
+    def sample_best_action(self):
+        """
+        :return:  The best action from the Root Node, the one with the highest visit count.
+        :rtype:   int
+
+        Returns the legal action with the highest visit count N(root_node, a).
+        """
+        return self._root_node.sample_optimal_action(tau=0)
 
 
 # for testing purposes
@@ -365,7 +362,6 @@ if __name__ == "__main__":
     mcts.simulate()
     print(f'Time taken to execute the MCTS is {time.time() - start_time}')
 
-    pi_pred = mcts.sample_probabilities()
-    print(f'Optimal policy found:')
-    print(pi_pred)
-    print(sum(pi_pred))
+    pi_pred = mcts.sample_action()
+    print(f'Optimal policy found: {pi_pred}')
+    print(f'Move corresponding to it: {move_translator.move_from_id(pi_pred)}')

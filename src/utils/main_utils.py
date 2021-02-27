@@ -29,6 +29,12 @@ def deque_slice(deque, start, end=-1):
     return list(itertools.islice(deque, start, end))
 
 
+def pad_to_maxlen(lst, maxlen):
+    """ pads a list with it's last element until it's length becomes maxlen """
+    while len(lst) < maxlen:
+        lst.append(lst[-1])
+
+
 def parse_train_input(args=None):
     """ parse input from the terminal/command line for the train.py python script """
 

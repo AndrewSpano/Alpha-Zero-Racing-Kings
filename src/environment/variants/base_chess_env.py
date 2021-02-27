@@ -139,6 +139,24 @@ class ChessEnv:
             raise GameIsNotOverError
         return 1 if result == '1-0' else -1 if result == '0-1' else 0
 
+    def is_terminal_move(self, move):
+        """
+        :param str move:  The move that could possibly lead to the game ending
+
+        :return:  True if the move makes the game end. Else False
+        :rtype:   bool
+        """
+        # push the move and check if it leads to a terminal state
+        self._board.push_san(move)
+        if self._repetitions_count.get(self._board.board_fen(), 0) == 2 or \
+                self._board.is_variant_end():
+            result = True
+        else:
+            result = False
+        # restore the previous board setup and return the result
+        self._board.pop()
+        return result
+
     def reset(self):
         """
         :return:  None

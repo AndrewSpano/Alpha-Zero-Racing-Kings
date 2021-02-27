@@ -102,6 +102,16 @@ class MoveTranslator:
         """
         return len(self._move_to_id)
 
+    @property
+    @abstractmethod
+    def legal_moves_upper_bound(self):
+        """
+        :return:  The max number of legal moves that a player may have at any state, for the
+                    corresponding chess variant.
+        :rtype:   int
+        """
+        pass
+
     def id_from_move(self, move):
         """
         :param str move:  A Racing Kings Chess move.
@@ -129,6 +139,15 @@ class MoveTranslator:
         :rtype:   list[int]
         """
         return [self._move_to_id[move] for move in uci_moves]
+
+    def get_ucis_from_move_ids(self, ids):
+        """
+        :param list[int] ids:  A list containing chess move IDs.
+
+        :return:  A list with the respective UCI moves.
+        :rtype:   list[str]
+        """
+        return [self._id_to_move[_id] for _id in ids]
 
 
 if __name__ == "__main__":

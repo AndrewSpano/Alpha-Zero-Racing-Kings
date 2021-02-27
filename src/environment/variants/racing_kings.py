@@ -159,13 +159,16 @@ if __name__ == "__main__":
         'h3h4', 'a3a4',
         'h4h5', 'a4a5',
         'h5h6', 'a5a6',
-        'h6g7', 'a6b7',
-        'g7f8', 'b7c8'
+        'h6g7', 'a6a5',
+        'g7f8', 'a5a6'
     ]
 
-    while moves:
+    while moves and not env.is_finished:
         # print(env._board.result())
         env.play_move(moves.pop(0))
+        # if not env.is_finished:
+        #     print(f'move {moves[0]} is terminal: {env.is_terminal_move(moves[0])}')
+        # print(env.is_finished)
         # print(env.is_finished)
         # pp.pprint(env.current_state_representation)
         # print('\n\n\n\n')

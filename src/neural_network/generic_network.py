@@ -249,26 +249,33 @@ class GenericNeuralNetwork(nn.Module):
         return p, v
 
     @staticmethod
-    def criterion(z, v, pi, p):
+    def criterion(z, v, pi, p, legal_actions):
         """
-        :param torch.Tensor z:   Tensor containing the target values for the value head.
-                                    [N x 1]
-        :param torch.Tensor v:   Tensor containing the predicted value head values.
-                                    [N x 1]
-        :param torch.Tensor pi:  Tensor containing the target values for the policy head.
-                                    [N x num_actions]
-        :param torch.Tensor p:   Tensor containing the predicted policy head values.
-                                    [N x num_actions]
+        :param torch.FloatTensor z:         Tensor containing the target values for the value head.
+                                                [N x 1]
+        :param torch.FloatTensor v:         Tensor containing the predicted value head values.
+                                                [N x 1]
+        :param torch.LongTensor pi:         Tensor containing the target values for the policy head.
+                                                [N x 1]
+        :param torch.FloatTensor p:         Tensor containing the predicted policy head values.
+                                                [N x num_actions]
+        :param torch.Tensor legal_actions:  Tensor containing the legal actions for every batch.
 
         :return:  The value of the Alpha Zero Loss function when given the above tensors.
-        :rtype:   torch.Tensor
+        :rtype:   torch.FloatTensor
 
         Computes the loss function of the Alpha Zero algorithm using the following formula:
 
             L = (z - v)^2 - pi^T * log(p)
         """
-        # return F.mse_loss(v, z) + F.cross_entropy(pi. p)
-        return torch.square(z - v) + F.cross_entropy(pi, p)
+        # create the mask for the legal actions
+        mask = torch.Tensor([[float('-inf')] * p.shape[1]] * p.shape[0])
+        for idx, batch_legal_actions in enumerate(legal_actions):
+            mask[idx][batch_legal_actions] = 0
+
+        # add the mask to the action value probabilities and compute the loss
+        masked_p = p + mask
+        return F.mse_loss(v, z) + F.cross_entropy(masked_p, pi)
 
 
 # for testing purposes

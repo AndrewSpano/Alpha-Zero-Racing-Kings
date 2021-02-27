@@ -241,8 +241,7 @@ def configuration_to_mcts_hyperparameters(conf):
             'dirichlet_alpha': str_to_float_list(conf['hyperparameters']['dirichlet_alpha'], 3),
             'dirichlet_epsilon': str_to_float(conf['hyperparameters']['dirichlet_epsilon']),
             'temperature_tau': str_to_float(conf['hyperparameters']['temperature_tau']),
-            'degrade_at_step': str_to_int(conf['hyperparameters']['degrade_at_step']),
-            'degraded_temperature': str_to_float(conf['hyperparameters']['degraded_temperature'])}
+            'degrade_at_step': str_to_int(conf['hyperparameters']['degrade_at_step'])}
 
 
 def configuration_to_training_parameters(conf):
@@ -257,9 +256,10 @@ def configuration_to_training_parameters(conf):
     return {'learning_rate': str_to_float(conf['hyperparameters']['learning_rate']),
             'milestones': str_to_float_list(conf['hyperparameters']['milestones'], 3),
             'gamma': str_to_float(conf['hyperparameters']['gamma']),
-            'momentum;': str_to_float(conf['hyperparameters']['momentum']),
+            'momentum': str_to_float(conf['hyperparameters']['momentum']),
             'c': str_to_float(conf['hyperparameters']['c']),
             'batch_size': str_to_int(conf['hyperparameters']['batch_size']),
+            'clip': str_to_float(conf['hyperparameters']['gradient_clipping']),
             'iterations': str_to_int(conf['self_play']['iterations']),
             'self_play_episodes': str_to_int(conf['self_play']['self_play_episodes']),
             'epochs': str_to_int(conf['self_play']['epochs']),

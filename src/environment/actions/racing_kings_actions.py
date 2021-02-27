@@ -48,3 +48,12 @@ class RacingKingsActions(MoveTranslator):
                 move_id += 1
 
         return move_to_id, id_to_move
+
+    @property
+    def legal_moves_upper_bound(self):
+        """
+        :return:  The max number of legal moves that a Racing Kings player may have at any state.
+        :rtype:   int
+        """
+        # 14 legal moves per rook, 14 per bishop, 8 per knight, 28 for the queen and 6 for the king
+        return 106

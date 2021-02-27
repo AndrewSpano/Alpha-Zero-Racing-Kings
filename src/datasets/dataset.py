@@ -7,11 +7,9 @@ Implements a Dataset class used to group the data that the Alpha Zero agent gath
 """
 
 import torch
+import torch.utils.data
 
 from collections import deque
-
-
-# noinspection PyUnresolvedReferences
 
 
 class SelfPlayDataset(torch.utils.data.Dataset):
@@ -32,11 +30,12 @@ class SelfPlayDataset(torch.utils.data.Dataset):
         :param int idx:  The index of the data example we want to retrieve.
 
         :return:  A tuple containing information for the data pointed by the specified index.
-        :rtype:   list[int], torch.Tensor, torch.Tensor, torch.Tensor
+        :rtype:   torch.LongTensor, torch.Tensor, int, int
         """
-        legal_actions, st, result, optimal_policy = self.deque[idx]
-        return legal_actions, torch.Tensor(st).to(self.device),\
-               torch.Tensor(result).to(self.device), torch.Tensor(optimal_policy).to(self.device)
+        legal_actions, st, z, pi = self.deque[idx]
+        legal_actions = torch.LongTensor(legal_actions).to(self.device)
+        st = torch.Tensor(st).to(self.device)
+        return legal_actions, st, z, pi
 
     def __len__(self):
         """
