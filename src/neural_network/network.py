@@ -17,13 +17,13 @@ from src.neural_network.network_utils import same_padding
 class NeuralNetwork(nn.Module):
     """ Neural Network class used during Training of the Alpha Zero algorithm """
 
-    def __init__(self, architecture, device):
+    def __init__(self, architecture, _device):
         """
-        :param dict architecture:    Dictionary describing the architecture of the model.
-        :param torch.device device:  The device in which the model currently operates.
+        :param dict architecture:     Dictionary describing the architecture of the model.
+        :param torch.device _device:  The device in which the model currently operates.
         """
         super(NeuralNetwork, self).__init__()
-        self.device = device
+        self.device = _device
 
         # define the architecture specifics
         self.input_shape = architecture['input_shape']
@@ -212,8 +212,6 @@ class NeuralNetwork(nn.Module):
 
 # for testing purposes
 if __name__ == "__main__":
-    pass
-    """
     from src.environment.variants.racing_kings import RacingKingsEnv
     env = RacingKingsEnv()
     from src.environment.actions.racing_kings_actions import RacingKingsActions
@@ -238,16 +236,3 @@ if __name__ == "__main__":
 
     torch.set_printoptions(threshold=10_000)
     print(torch.sum(pi_pred))
-    """
-
-    # la = [[2, 7], [1, 3, 4], [12, 13]]
-    # x = torch.randn(3, 20)
-    # print(x)
-    #
-    # mask = torch.Tensor([[float('-inf')] * x.shape[1]] * x.shape[0])
-    # print(mask)
-    #
-    # for idx, batch in enumerate(la):
-    #     mask[idx][batch] = 0
-    #
-    # print(mask)

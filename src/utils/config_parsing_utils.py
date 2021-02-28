@@ -316,11 +316,3 @@ def parse_config_file(filepath, _type='nn_architecture'):
         return configuration_to_supervised_training_parameters(config_parser)
     else:
         raise ValueError('Unknown configuration file type.')
-
-
-if __name__ == "__main__":
-
-    import pprint
-    pp = pprint.PrettyPrinter()
-    file = '../../configurations/mcts_hyperparams.ini'
-    pp.pprint(parse_config_file(file, _type='mcts_hyperparams'))
