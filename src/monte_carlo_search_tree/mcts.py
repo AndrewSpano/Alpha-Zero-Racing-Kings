@@ -231,7 +231,7 @@ class MCTS:
         p = p.squeeze(0)
 
         # initialize a mask tensor with -infinite values where the actions are illegal
-        mask = torch.Tensor([float('-inf')] * self._mvt.num_actions)
+        mask = torch.Tensor([float('-inf')] * self._mvt.num_actions).to(self._device)
         mask[actions] = 0
 
         # run the masked output through Softmax to get the prior probabilities of legal actions

@@ -124,8 +124,8 @@ class AlphaZeroChessAgent:
         # perform 'epochs' passed through the dataset of training
         for epoch in range(epochs):
 
-            # store the average loss to print it in the end of the epoch
-            average_loss = 0
+            # store the sum of the losses to print the average in the end of the epoch
+            sum_loss = 0
 
             # for legal_actions, st, z, pi in train_dataloader:
             for legal_actions, st, z, pi in dataloader:
@@ -140,8 +140,10 @@ class AlphaZeroChessAgent:
                 p, v = self._nn(st)
 
                 # compute the loss
-                loss = self._nn.criterion(z.float(), v, pi.long(), p, legal_actions)
-                average_loss += loss.item()
+                z = z.to(self._device).float()
+                pi = pi.to(self._device).long()
+                loss = self._nn.criterion(z, v, pi, p, legal_actions)
+                sum_loss += loss.item()
                 # avoid exploding gradients
                 torch.nn.utils.clip_grad_norm_(self._nn.parameters(), self._train_params['clip'])
 
@@ -153,7 +155,7 @@ class AlphaZeroChessAgent:
                 scheduler.step()
 
             # log information about the average epoch loss
-            logging.info(f'Average Loss of epoch {epoch + 1}: {average_loss / len(dataloader):.2f}')
+            logging.info(f'Average Loss of epoch {epoch + 1}: {sum_loss / len(dataloader):.2f}')
 
     def _save_nn_weights(self, iteration):
         """

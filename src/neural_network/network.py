@@ -174,14 +174,13 @@ class NeuralNetwork(nn.Module):
         """
         x = self.convolutional_block(x)
         for res_block in self.preresidual_tower_block:
-            x = self._forward_residual_block(res_block, x)
+            x = self._forward_residual_block(res_block.to(self.device), x)
         p = self.policy_head_block(x).exp()
         v = self.value_head_block(x)
 
         return p, v
 
-    @staticmethod
-    def criterion(z, v, pi, p, legal_actions):
+    def criterion(self, z, v, pi, p, legal_actions):
         """
         :param torch.FloatTensor z:         Tensor containing the target values for the value head.
                                                 [N x 1]
@@ -201,7 +200,7 @@ class NeuralNetwork(nn.Module):
             L = (z - v)^2 - pi^T * log(p)
         """
         # create the mask for the legal actions
-        mask = torch.Tensor([[float('-inf')] * p.shape[1]] * p.shape[0])
+        mask = torch.Tensor([[float('-inf')] * p.shape[1]] * p.shape[0]).to(self.device)
         for idx, batch_legal_actions in enumerate(legal_actions):
             mask[idx][batch_legal_actions] = 0
 
