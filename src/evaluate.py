@@ -5,6 +5,15 @@ Created on February 25 2021
 
 Script used to load a ChessAgent model in order to play against it. This script is very similar
 to the train.py script. They differ in the command line/terminal arguments.
+
+Example usage:
+
+python3 train.py
+    --nn-config ../configurations/neural_network_architecture.ini
+    --pre-trained-weights ../models/checkpoints/iteration_9_weights.pth
+    --mcts-config ../configurations/mcts_hyperparams.ini
+    --device cpu
+    --white
 """
 
 import torch
@@ -17,7 +26,7 @@ from src.environment.variants.racing_kings import RacingKingsEnv
 from src.environment.actions.racing_kings_actions import RacingKingsActions
 from src.neural_network.network import NeuralNetwork
 from src.neural_network.generic_network import GenericNeuralNetwork
-from src.agent.chess_agent import RacingKingsChessAgent
+from src.agent.chess_agent import AlphaZeroChessAgent
 
 
 def main(args):
@@ -47,15 +56,15 @@ def main(args):
         model = NeuralNetwork(model_configuration, device).to(device)
 
     # create the Chess agent
-    chess_agent = RacingKingsChessAgent(env=env,
-                                        mvt=mvt,
-                                        nn=model,
-                                        device=device,
-                                        mcts_config=mcts_configuration,
-                                        pretrained_w=args.pre_trained_weights)
+    chess_agent = AlphaZeroChessAgent(env=env,
+                                      mvt=mvt,
+                                      nn=model,
+                                      device=device,
+                                      mcts_config=mcts_configuration,
+                                      pretrained_w=args.pre_trained_weights)
 
     # play a game against the agent
-    result = chess_agent.play_against(args.white)
+    result = chess_agent.play_against(args.white, use_display=not args.no_display)
 
     # print winner information
     print()

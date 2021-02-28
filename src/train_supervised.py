@@ -1,24 +1,29 @@
 """
-Created on February 16 2021
+Created on February 28 2021
 
 @author: Andreas Spanopoulos
 
-Script used to train an Alpha Zero agent.
+Script used to train the Neural Network of the AlphaZero agent using Human Expert play data
+(behavioural cloning). After, the AlphaZero agent can be trained normally with self-play,
+while having stored the previous games.
 
 Example usage:
 
-python3 train.py
+python3 train_supervised.py
     --train-config ../configurations/training_hyperparams.ini
     --nn-config ../configurations/neural_network_architecture.ini
     --nn-checkpoints ../models/checkpoints
+    --supervised-train-config ../configurations/supervised_training_hyperparams.ini
+    --data-root-directory ../Dataset
+    --parsed-data-destination-file ../Dataset/parsed_data.pickle
     --mcts-config ../configurations/mcts_hyperparams.ini
     --device cpu
 """
 
-import logging
 import torch
+import logging
 
-from src.utils.main_utils import parse_train_input
+from src.utils.main_utils import parse_supervised_train_input
 from src.utils.config_parsing_utils import parse_config_file
 
 from src.environment.variants.racing_kings import RacingKingsEnv
@@ -43,6 +48,8 @@ def main(args):
     model_configuration = parse_config_file(args.nn_config, _type='nn_architecture')
     mcts_configuration = parse_config_file(args.mcts_config, _type='mcts_hyperparams')
     train_configuration = parse_config_file(args.train_config, _type='training')
+    supervised_train_configuration = parse_config_file(args.supervised_train_config,
+                                                       _type='supervised_training')
 
     # add the checkpoints dictionary path to the training configuration dictionary
     train_configuration['checkpoints_directory'] = args.nn_checkpoints
@@ -59,19 +66,28 @@ def main(args):
         model = NeuralNetwork(model_configuration, device).to(device)
 
     # finally create the Chess agent
+    logging.info('Creating AlphaZero agent.')
     chess_agent = AlphaZeroChessAgent(env=env,
                                       mvt=mvt,
                                       nn=model,
                                       device=device,
                                       mcts_config=mcts_configuration,
-                                      train_config=train_configuration,
-                                      pretrained_w=args.pre_trained_weights)
+                                      train_config=train_configuration)
 
-    # train the Chess agent using self play
-    chess_agent.train_agent()
+    # train the NN of the agent using supervised learning
+    logging.info('Starting supervised learning.\n')
+    chess_agent.train_agent_supervised(root_directory=args.data_root_directory,
+                                       destination=args.parsed_data_destination_file,
+                                       supervised_train_params=supervised_train_configuration,
+                                       already_parsed_data=args.parsed_data)
+
+    # train the Chess agent using self play, while also keeping the previously observed examples
+    logging.info('\nStarting self-play training.')
+    chess_agent.train_agent(replay_buffer_had_data=True)
+    logging.info('\nSelf-play training has been completed successfully.')
 
 
 if __name__ == "__main__":
     print()
-    arg = parse_train_input()
+    arg = parse_supervised_train_input()
     main(arg)

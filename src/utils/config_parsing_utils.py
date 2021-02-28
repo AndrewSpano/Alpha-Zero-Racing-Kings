@@ -258,21 +258,42 @@ def configuration_to_training_parameters(conf):
             'gamma': str_to_float(conf['hyperparameters']['gamma']),
             'momentum': str_to_float(conf['hyperparameters']['momentum']),
             'c': str_to_float(conf['hyperparameters']['c']),
+            'epochs': str_to_int(conf['hyperparameters']['epochs']),
             'batch_size': str_to_int(conf['hyperparameters']['batch_size']),
             'clip': str_to_float(conf['hyperparameters']['gradient_clipping']),
             'iterations': str_to_int(conf['self_play']['iterations']),
             'self_play_episodes': str_to_int(conf['self_play']['self_play_episodes']),
-            'epochs': str_to_int(conf['self_play']['epochs']),
             'max_deque_len': str_to_int(conf['self_play']['max_deque_len']),
             'max_game_len': str_to_int(conf['self_play']['max_game_len']),
             'checkpoint_every': str_to_int(conf['self_play']['checkpoint_every'])}
+
+
+def configuration_to_supervised_training_parameters(conf):
+    """
+    :param ConfigParser conf:  The Configuration Parser that has parsed an configuration file
+                                containing information about the supervised training procedure.
+
+    :return:  A dictionary that has parsed the supervised training hyperparameters information
+                from the ConfigParser.
+    :rtype:   dict
+    """
+    return {'learning_rate': str_to_float(conf['hyperparameters']['learning_rate']),
+            'milestones': str_to_float_list(conf['hyperparameters']['milestones'], 3),
+            'gamma': str_to_float(conf['hyperparameters']['gamma']),
+            'momentum': str_to_float(conf['hyperparameters']['momentum']),
+            'c': str_to_float(conf['hyperparameters']['c']),
+            'batch_size': str_to_int(conf['hyperparameters']['batch_size']),
+            'epochs': str_to_int(conf['hyperparameters']['epochs']),
+            'min_white_elo': str_to_int(conf['imitation_constraints']['min_white_elo']),
+            'min_black_elo': str_to_int(conf['imitation_constraints']['min_black_elo']),
+            'worse_games': str_to_int(conf['imitation_constraints']['worse_games'])}
 
 
 def parse_config_file(filepath, _type='nn_architecture'):
     """
     :param str filepath:  The (absolute/relative) path to the configuration file.
     :param str _type:     One of 'nn_architecture', 'generic_nn_architecture',
-                                 'mcts_hyperparams', 'training'
+                                 'mcts_hyperparams', 'training', 'supervised_training'
 
     :return:  The dictionary describing the configuration file.
     :rtype:   dict
@@ -291,6 +312,8 @@ def parse_config_file(filepath, _type='nn_architecture'):
         return configuration_to_mcts_hyperparameters(config_parser)
     elif _type == 'training':
         return configuration_to_training_parameters(config_parser)
+    elif _type == 'supervised_training':
+        return configuration_to_supervised_training_parameters(config_parser)
     else:
         raise ValueError('Unknown configuration file type.')
 
