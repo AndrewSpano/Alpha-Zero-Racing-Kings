@@ -176,18 +176,20 @@ class Node:
 class MCTS:
     """ class used to implement the Monte Carlo Tree Search algorithm """
 
-    def __init__(self, env, nn, mvt, hyperparams):
+    def __init__(self, env, nn, mvt, hyperparams, device):
         """
-        :param ChessEnv env:        Current Chess Environment the agent operates in.
-        :param torch.nn.Module.nn:  Neural Network used for prior probability prediction.
-        :param MoveTranslator mvt:  Move Translator object used to convert move to their IDs.
-        :param dict hyperparams:    Dictionary containing hyperparameters for the model.
+        :param ChessEnv env:         Current Chess Environment the agent operates in.
+        :param torch.nn.Module.nn:   Neural Network used for prior probability prediction.
+        :param MoveTranslator mvt:   Move Translator object used to convert move to their IDs.
+        :param dict hyperparams:     Dictionary containing hyperparameters for the model.
+        :param torch.device device:  Device on which the NN currently operates.
         """
         # basic variables of the class
         self._env = env
         self._nn = nn
         self._mvt = mvt
         self._hyperparameters = hyperparams
+        self._device = device
         self._root_node = Node()
 
         # compute the available action from the root node
@@ -197,7 +199,8 @@ class MCTS:
 
         # compute prior probabilities for each available action using the NN
         with torch.no_grad():
-            p, v = self._nn(torch.Tensor(self._env.current_state_representation).unsqueeze(0))
+            st = torch.Tensor(self._env.current_state_representation).to(device)
+            p, v = self._nn(st.unsqueeze(0))
         action_to_prior = self._compute_prior_probabilities(available_actions_from_root, p)
 
         # initialize Search Tree: expand the root Node
@@ -291,8 +294,8 @@ class MCTS:
 
                 # get action probabilities and value for current Node
                 with torch.no_grad():
-                    st = torch.Tensor(env_copy.current_state_representation).unsqueeze(0)
-                    p, v = self._nn(st)
+                    st = torch.Tensor(env_copy.current_state_representation).to(self._device)
+                    p, v = self._nn(st.unsqueeze(0))
                 action_to_prior = self._compute_prior_probabilities(available_actions, p)
 
                 # expand the node
@@ -345,6 +348,7 @@ if __name__ == "__main__":
     from src.environment.actions.racing_kings_actions import RacingKingsActions
     move_translator = RacingKingsActions()
 
+    _device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     nn_config_path = '../../configurations/neural_network_architecture.ini'
     arch = parse_config_file(nn_config_path, _type='nn_architecture')
     arch['input_shape'] = torch.Tensor(environment.current_state_representation).shape
@@ -356,7 +360,7 @@ if __name__ == "__main__":
     mcts_config_path = '../../configurations/mcts_hyperparams.ini'
     mcts_hyperparams = parse_config_file(mcts_config_path, _type='mcts_hyperparams')
 
-    mcts = MCTS(environment, model, move_translator, mcts_hyperparams)
+    mcts = MCTS(environment, model, move_translator, mcts_hyperparams, _device)
 
     start_time = time.time()
     mcts.simulate()

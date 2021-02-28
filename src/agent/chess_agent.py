@@ -74,7 +74,7 @@ class AlphaZeroChessAgent:
             pad_to_maxlen(legal_actions, maxlen=self._mvt.legal_moves_upper_bound)
 
             # start a Monte Carlo Tree Search in order to get the "optimal policy" pi
-            mcts = MCTS(self._env, self._nn, self._mvt, self._mcts_config)
+            mcts = MCTS(self._env, self._nn, self._mvt, self._mcts_config, self._device)
 
             # simulate the game, then sample the "optimal policy" and get the best action from it
             mcts.simulate()
@@ -311,7 +311,7 @@ class AlphaZeroChessAgent:
         while not self._env.is_finished:
 
             # agent makes a move
-            mcts = MCTS(self._env, self._nn, self._mvt, self._mcts_config)
+            mcts = MCTS(self._env, self._nn, self._mvt, self._mcts_config, self._device)
             mcts.simulate()
             agent_move = self._mvt.move_from_id(mcts.sample_best_action())
             print(f'Agent plays: {self._env.san_from_uci(agent_move)}\n')
