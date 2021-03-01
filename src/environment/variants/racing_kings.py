@@ -163,27 +163,35 @@ class RacingKingsEnv(ChessEnv):
 if __name__ == "__main__":
 
     import pprint
-
     pp = pprint.PrettyPrinter(indent=4)
 
     env = RacingKingsEnv()
-    # pp.pprint(env.current_state_representation)
+    pp.pprint(env.current_state_representation)
 
     moves = [
-        'h2h3', 'a2a3',
-        'h3h4', 'a3a4',
-        'h4h5', 'a4a5',
-        'h5h6', 'a5a6',
-        'h6g7', 'a6a5',
-        'g7f8', 'a5a6'
+        'Rg3', 'Be4',
+        'Ng2', 'Nc4',
+        'Rg4', 'Nc3',
+        'Rxe4', 'Nd6',
+        'Rd4', 'Ka3',
+        'Rxd6', 'Rd2',
+        'Rd4', 'Rxd4',
+        'Bxd4', 'Ne4',
+        'Bxa1', 'Kb4',
+        'Ne3', 'Bxe3',
+        'Bd4', 'Rb3',
+        'Bxe3', 'Nf2',
+        'Bxf2', 'Ka5',
+        'Qc6', 'Rb4',
+        'Kh3', 'Rd4',
+        'Rg4', 'Rd5',
+        'Kh4', 'Rd6',
+        'Qxd6', 'Kb5',
+        'Bg2', 'Ka5',
+        'Nc3'
     ]
 
     while moves and not env.is_finished:
-        # print(env._board.result())
-        env.play_move(moves.pop(0))
-        # if not env.is_finished:
-        #     print(f'move {moves[0]} is terminal: {env.is_terminal_move(moves[0])}')
-        # print(env.is_finished)
-        # print(env.is_finished)
-        # pp.pprint(env.current_state_representation)
-        # print('\n\n\n\n')
+        move = moves.pop(0)
+        env.play_move(move)
+        print(env.is_finished)

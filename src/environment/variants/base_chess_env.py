@@ -130,7 +130,8 @@ class ChessEnv:
         :return:  True if the game has finished (loss/draw/win); Else False.
         :rtype:   Bool
         """
-        return self._repetitions_count[self._board.board_fen()] == 3 or self._board.is_variant_end()
+        return self._repetitions_count[self._board.board_fen()] == 3 or \
+            self._board.is_variant_end() or len(list(self._board.legal_moves)) == 0
 
     @property
     def winner(self):
@@ -167,7 +168,7 @@ class ChessEnv:
         # push the move and check if it leads to a terminal state
         self._board.push_san(move)
         if self._repetitions_count.get(self._board.board_fen(), 0) == 2 or \
-                self._board.is_variant_end():
+                self._board.is_variant_end() or len(list(self._board.legal_moves)) == 0:
             result = True
         else:
             result = False
