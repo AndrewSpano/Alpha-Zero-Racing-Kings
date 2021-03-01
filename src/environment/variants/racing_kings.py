@@ -58,8 +58,23 @@ class RacingKingsEnv(ChessEnv):
         :return:  None
         :rtype:   None
 
-        # ToDo: explain the input, either here or in the README of the NeuralNetwork package.
         Computes the list of n x n lists that will be used for input in the Neural Network.
+
+        For this specific variant, the input is:
+
+        - (10 * t_history) n x n planes, that encode the position of each piece type for every color
+            (5 pieces types * 2 colors = 10). For every piece of every color, the n x n plane is
+            all 0's, except for the squares where the corresponding pieces are: There they are 1's.
+            Same applies for the past (t_history - 1) positions.
+        - (2 * t_history) n x n planes, that encode the number of repetitions for the current
+            position, and the past (t_history - 1) positions. The first plane is all 1's if the
+            corresponding position has appeared for the second time; Else 0's. The second plane is
+            all 1's if the corresponding position appears for the first time; Else 0's.
+        - 1 n x n plane for the color of the player who's turn is to play: All 1's for white,
+            all 0's for black.
+        - 1 n x n plane that is all equal to the number of total moves played in the game so far.
+        - 1 n x n plane that is all equal to the number of halfmoves that count towards the 50
+            move rule (no progress moves).
         """
 
         # if this method is being called for the starting state
