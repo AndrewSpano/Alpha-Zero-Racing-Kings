@@ -225,7 +225,7 @@ if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = NeuralNetwork(arch, device).to(device)
 
-    inp = torch.FloatTensor(env.current_state_representation)
+    inp = torch.FloatTensor(env.current_state_representation).to(device)
     # convert from (99, 8, 8) -> (1, 99, 8, 8)
     inp = inp.unsqueeze(0)
     pi_pred, v_pred = model(inp)

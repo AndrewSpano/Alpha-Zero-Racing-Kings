@@ -197,6 +197,11 @@ def parse_supervised_train_input(args=None):
                         default=default_nn_checkpoints,
                         help='Relative/Absolute path to the directory used for saving NN weights.')
 
+    # the path of the stored NN weights
+    parser.add_argument('-w', '--pre-trained-weights', type=str, action='store',
+                        metavar='path_to_the_pretrained_nn_weights',
+                        help='Relative/Absolute path to the pre-trained and saved NN weights.')
+
     # path to the configuration file for the supervised training configuration file
     parser.add_argument('-s', '--supervised-train-config', type=str, action='store',
                         metavar='path_to_the_supervised_training_configuration_file', nargs='?',

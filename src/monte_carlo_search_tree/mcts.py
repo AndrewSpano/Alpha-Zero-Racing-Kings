@@ -266,7 +266,7 @@ class MCTS:
             node.backup(best_action, value)
 
             # back the value computed to a higher level of the search Tree
-            return value
+            return -value
 
         # else, if we are at a terminal or leaf Node
         else:
@@ -302,7 +302,7 @@ class MCTS:
                 node.expand(available_actions, action_to_prior, terminal_actions)
 
                 # backup the value to the previous edges
-                return v.item()
+                return -v.item()
 
     def simulate(self):
         """

@@ -170,6 +170,7 @@ class AlphaZeroChessAgent:
         """
         path = os.path.join(self._train_params['checkpoints_directory'],
                             f'iteration_{iteration}_weights.pth')
+        logging.info(f'Saving Model weights at path: {path}.')
         save_pytorch_model(self._nn, path)
 
     def train_agent(self, replay_buffer_had_data=False):
@@ -198,7 +199,7 @@ class AlphaZeroChessAgent:
             self._replay_buffer = deque([], maxlen=self._train_params['max_deque_len'])
 
         # repeat the following pipeline: a) Play a number of self play episodes, b) update NN
-        for iteration in tqdm(range(self._train_params['iterations']), desc='\nSelf-play Pipeline'):
+        for iteration in tqdm(range(self._train_params['iterations']), desc='\nTraining Pipeline'):
 
             # log some information
             logging.info(f'Starting self-play iteration {iteration + 1}.')
@@ -207,7 +208,7 @@ class AlphaZeroChessAgent:
             self._nn.eval()
 
             # execute episodes of self play, and update the deque accordingly
-            for _ in range(self._train_params['self_play_episodes']):
+            for _ in tqdm(range(self._train_params['self_play_episodes']), position=0, leave=True):
                 self._replay_buffer += self.play_episode()
 
             # create a dataset with the current examples and a dataloader for it
@@ -245,6 +246,8 @@ class AlphaZeroChessAgent:
         # load the data if it had already been parsed
         if already_parsed_data is not None:
             self._replay_buffer = pd.read_pickle(already_parsed_data)
+            logging.info(f'Successfully read parsed data. The number of training examples is: '
+                         f'{len(self._replay_buffer)}')
         else:
             # else parse the data and create a replay buffer
             self._replay_buffer = parse_data(root_directory=root_directory,
@@ -259,6 +262,7 @@ class AlphaZeroChessAgent:
         dataset = SupervisedDataset(self._replay_buffer, device=self._device)
         if already_parsed_data is None:
             dataset.save_data_to_destination(destination)
+            logging.info(f'Successfully saved the parsed data in the destination: {destination}.')
         dataloader = torch.utils.data.DataLoader(dataset=dataset,
                                                  batch_size=supervised_train_params['batch_size'],
                                                  shuffle=True)
@@ -273,7 +277,9 @@ class AlphaZeroChessAgent:
                                                    gamma=supervised_train_params['gamma'])
 
         # train the NN with the human play data and save the weights after
-        self._train_nn(dataloader, optimizer, scheduler, epochs=supervised_train_params['epochs'])
+        epochs = supervised_train_params['epochs']
+        logging.info(f"Starting Neural Network training for {epochs} epochs.")
+        self._train_nn(dataloader, optimizer, scheduler, epochs=epochs)
         self._save_nn_weights(0)
 
     def play_against(self, player_has_white, use_display=False):

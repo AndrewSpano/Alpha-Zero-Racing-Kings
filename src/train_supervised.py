@@ -72,7 +72,8 @@ def main(args):
                                       nn=model,
                                       device=device,
                                       mcts_config=mcts_configuration,
-                                      train_config=train_configuration)
+                                      train_config=train_configuration,
+                                      pretrained_w=args.pre_trained_weights)
 
     # train the NN of the agent using supervised learning
     logging.info('Starting supervised learning.\n')
@@ -80,9 +81,10 @@ def main(args):
                                        destination=args.parsed_data_destination_file,
                                        supervised_train_params=supervised_train_configuration,
                                        already_parsed_data=args.parsed_data)
+    logging.info('Supervised Learning Complete.\n')
 
     # train the Chess agent using self play, while also keeping the previously observed examples
-    logging.info('\nStarting self-play training.')
+    logging.info('Starting self-play training.')
     chess_agent.train_agent(replay_buffer_had_data=True)
     logging.info('\nSelf-play training has been completed successfully.')
 

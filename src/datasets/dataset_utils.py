@@ -149,5 +149,5 @@ def parse_data(root_directory, env, mvt, deque_maxlen, min_white_elo=2000, min_b
                      f'{len(data)}. The time it took to parse the data file is: '
                      f'{time.time() - start_time:.2f}s\n')
 
-    logging.info('All files have been parsed.')
+    logging.info('All files have been parsed.\n\n')
     return data

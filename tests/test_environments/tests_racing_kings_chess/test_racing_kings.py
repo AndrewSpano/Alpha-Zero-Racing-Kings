@@ -10,7 +10,7 @@ from src.environment.variants.racing_kings import RacingKingsEnv
 
 
 class TestRacingKingsEnv(unittest.TestCase):
-    """ implements tests for the utility functions of the Racing Kings Chess variant """
+    """ implements tests for the environment of tge Racing Kings Chess variant """
 
     @classmethod
     def setUpClass(cls) -> None:
