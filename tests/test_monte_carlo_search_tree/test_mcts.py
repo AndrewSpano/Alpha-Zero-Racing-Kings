@@ -74,7 +74,7 @@ class TestMonteCarloTreeSearch(unittest.TestCase):
     def test_sample_best_action(self):
         """ test the sample_best_action() method returns the action with the highest visit count """
         self.mcts.simulate()
-        pi = self.mcts.sample_action()
+        pi = self.mcts.sample_best_action()
         legal_actions = self.mvt.get_move_ids_from_uci(self.env.legal_moves)
         best_action, best_visit_count = -1, -1
         same_best_counts = []
