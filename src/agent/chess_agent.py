@@ -320,7 +320,7 @@ class AlphaZeroChessAgent:
 
             # agent makes a move
             mcts = MCTS(self._env, self._nn, self._mvt, self._mcts_config, self._device)
-            mcts.simulate()
+            mcts.simulate(evaluation=True)
             agent_move = self._mvt.move_from_id(mcts.sample_best_action())
             print(f'Agent plays: {self._env.san_from_uci(agent_move)}\n')
             self._env.play_move(agent_move)

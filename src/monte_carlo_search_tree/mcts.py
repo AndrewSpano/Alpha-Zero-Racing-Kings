@@ -12,6 +12,7 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 
+from tqdm import tqdm
 from src.utils.config_parsing_utils import parse_config_file
 from src.environment.variants.base_chess_env import ChessEnv
 from src.environment.actions.action_representations import MoveTranslator
@@ -304,8 +305,10 @@ class MCTS:
                 # backup the value to the previous edges
                 return -v.item()
 
-    def simulate(self):
+    def simulate(self, evaluation=False):
         """
+        :param bool evaluation:  True if the model is currently playing against another player
+                                    (i.e. during evaluation). False during training.
         :return:  None
         :rtype:   None
 
@@ -313,8 +316,12 @@ class MCTS:
         along the way.
         """
         simulations = self._hyperparameters['num_iterations']
-        for _ in range(simulations):
-            self._select_expand_backup(self._root_node, self._env.copy())
+        if evaluation:
+            for _ in tqdm(range(simulations), desc='Thinking..', position=0, leave=True):
+                self._select_expand_backup(self._root_node, self._env.copy())
+        else:
+            for _ in range(simulations):
+                self._select_expand_backup(self._root_node, self._env.copy())
 
     def sample_action(self):
         """
