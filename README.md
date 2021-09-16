@@ -15,7 +15,9 @@ first, wins the game (unless white reaches it first and black can reach it in hi
 it's a draw). No checks are allowed. Hence, walking into a check is also illegal. The starting
 board looks like this:
 
-![image](./images/racing_kings_board.png)
+<p align="center">
+  <img src="./images/racing_kings_board.png" alt="alt text" width="450" height="450">
+</p>
 
 From personal experience, the average length of Racing Kings game for high rated players is
 ~15 moves. The number of legal actions per position is significantly smaller than that of regular
